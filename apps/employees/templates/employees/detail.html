@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ employee.full_name }} · {{ request.tenant.name }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+    <div class="flex items-start justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight text-slate-900">{{ employee.full_name }}</h1>
+            <p class="mt-1 text-sm text-slate-500">
+                {{ employee.get_pay_basis_display }}
+                {% if employee.is_active %}
+                    · <span class="text-emerald-700">Active</span>
+                {% else %}
+                    · <span class="text-slate-500">Inactive</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'employees:update' employee.pk %}" class="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Edit</a>
+            <a href="{% url 'employees:list' %}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Back</a>
+        </div>
+    </div>
+
+    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Contact</h2>
+        <dl class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <dt class="text-slate-500">Work email</dt><dd class="text-slate-900">{{ employee.work_email|default:"—" }}</dd>
+            <dt class="text-slate-500">Phone</dt><dd class="text-slate-900">{{ employee.phone|default:"—" }}</dd>
+            <dt class="text-slate-500">Hired</dt><dd class="text-slate-900">{{ employee.hire_date|date:"Y-m-d" }}</dd>
+        </dl>
+    </section>
+
+    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Compensation</h2>
+        <dl class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <dt class="text-slate-500">Pay basis</dt><dd class="text-slate-900">{{ employee.get_pay_basis_display }}</dd>
+            <dt class="text-slate-500">Pay rate</dt><dd class="text-slate-900">{% if employee.pay_rate_money %}{{ employee.pay_rate_money.format }}{% else %}—{% endif %}</dd>
+        </dl>
+        <p class="mt-3 text-xs text-slate-500">Pay rate is encrypted at rest; this page decrypts for the signed-in tenant admin only.</p>
+    </section>
+
+    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Identifiers &amp; banking</h2>
+        <dl class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <dt class="text-slate-500">National ID</dt><dd class="text-slate-900">{{ employee.national_id|default:"—" }}</dd>
+            <dt class="text-slate-500">Passport</dt><dd class="text-slate-900">{{ employee.passport_number|default:"—" }}{% if employee.passport_expiry %} (exp. {{ employee.passport_expiry|date:"Y-m-d" }}){% endif %}</dd>
+            <dt class="text-slate-500">Visa</dt><dd class="text-slate-900">{{ employee.visa_number|default:"—" }}{% if employee.visa_expiry %} (exp. {{ employee.visa_expiry|date:"Y-m-d" }}){% endif %}</dd>
+            <dt class="text-slate-500">Bank account</dt><dd class="text-slate-900">{{ employee.bank_account_number|default:"—" }}</dd>
+        </dl>
+    </section>
+</div>
+{% endblock %}

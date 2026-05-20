@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Bonuses & deductions · {{ request.tenant.name }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-5xl space-y-8">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Bonuses, deductions &amp; reimbursements</h1>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'compensation:create' 'bonus' %}" class="rounded bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800">Add bonus</a>
+            <a href="{% url 'compensation:create' 'deduction' %}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Add deduction</a>
+            <a href="{% url 'compensation:create' 'reimbursement' %}" class="rounded border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Add reimbursement</a>
+        </div>
+    </div>
+
+    {% for label, items in items_by_section %}{% endfor %}
+    {% for title, rows in items_groups %}{% endfor %}
+
+    <section>
+        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-500">Bonuses</h2>
+        {% include "compensation/_table.html" with items=bonuses kind='bonus' %}
+    </section>
+    <section>
+        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-500">Deductions</h2>
+        {% include "compensation/_table.html" with items=deductions kind='deduction' %}
+    </section>
+    <section>
+        <h2 class="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-500">Reimbursements</h2>
+        {% include "compensation/_table.html" with items=reimbursements kind='reimbursement' %}
+    </section>
+</div>
+{% endblock %}

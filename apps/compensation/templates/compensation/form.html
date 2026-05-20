@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Add {{ kind }} · {{ request.tenant.name }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md space-y-4">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900 capitalize">Add {{ kind }}</h1>
+    <form method="post" class="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-slate-700">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<p class="mt-1 text-xs text-red-700">{{ error }}</p>{% endfor %}
+            </div>
+        {% endfor %}
+        <div class="flex gap-3">
+            <button type="submit" class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">Add</button>
+            <a href="{% url 'compensation:list' %}" class="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</a>
+        </div>
+    </form>
+</div>
+<style>
+    form input[type="text"], form input[type="number"], form select, form textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; background: white; }
+</style>
+{% endblock %}
