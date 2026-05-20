@@ -1,0 +1,40 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Payroll{% endblock %}</title>
+    {% if debug %}
+        <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    {% else %}
+        <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    {% endif %}
+    <style>
+      @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; }
+        aside, header.topnav { display: none !important; }
+        main { margin-left: 0 !important; padding: 0 !important; }
+      }
+    </style>
+</head>
+<body class="h-full font-sans text-slate-900 antialiased">
+    {% if user.is_authenticated %}
+        {% include "_partials/topnav.html" %}
+        <div class="flex min-h-[calc(100vh-3.5rem)]">
+            {% include "_partials/sidebar.html" %}
+            <main class="flex-1 px-6 py-8 lg:px-10">
+                {% include "_partials/messages.html" %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    {% else %}
+        <main class="flex min-h-screen items-center justify-center px-4">
+            <div class="w-full max-w-md">
+                {% include "_partials/messages.html" %}
+                {% block content_anonymous %}{% block content_anon %}{% endblock %}{% endblock %}
+            </div>
+        </main>
+    {% endif %}
+</body>
+</html>

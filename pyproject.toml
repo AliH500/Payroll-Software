@@ -1,0 +1,123 @@
+[project]
+name = "payroll"
+version = "0.1.0"
+description = "Multi-tenant payroll software for an import/export client operating in Pakistan and Ethiopia."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "Ali Hani" }]
+dependencies = [
+    "django>=5.2,<6.0",
+    "psycopg[binary]>=3.2",
+    "python-decouple>=3.8",
+    "argon2-cffi>=23",
+    "whitenoise>=6.7",
+    "gunicorn>=23",
+    "django-stubs-ext>=5.1,<6.0",
+    "django-axes>=7",
+    "cryptography>=43",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-django>=4.9",
+    "ruff>=0.8",
+    "mypy>=1.13,<2.0",
+    "django-stubs[compatible-mypy]>=5.1,<6.0",
+    "requests>=2.31",
+    "beautifulsoup4>=4.12",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["migrations", "staticfiles", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "DJ",  # flake8-django
+    "S",   # flake8-bandit
+    "RUF", # ruff-specific
+]
+ignore = [
+    "S101",   # assert used (fine in tests)
+    "RUF012", # mutable class attrs: standard Django style for Meta / admin / model managers
+    "DJ012",  # field/method order: ruff's heuristic doesn't match Django's documented style
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S105", "S106"]
+"**/test_*.py" = ["S105", "S106"]
+"config/settings/*" = ["F403", "F405"]
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+exclude = ["migrations/", "build/", "dist/", "venv/", ".venv/", "staticfiles/"]
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["services.*", "domain.*"]
+strict = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+
+[[tool.mypy.overrides]]
+module = ["decouple"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["apps.*.tests.*", "domain.tests.*", "services.tests.*", "services.*.tests.*"]
+disallow_untyped_defs = false
+check_untyped_defs = false
+disable_error_code = ["no-untyped-def", "type-arg", "unused-ignore"]
+
+[[tool.mypy.overrides]]
+# Glue code (views, admin, management commands, forms) where django-stubs friction
+# (manager generics, request.tenant attr, encrypted-field types) is high cost
+# to annotate and low value relative to runtime correctness covered by tests.
+module = [
+    "apps.*.views",
+    "apps.*.forms",
+    "apps.*.admin",
+    "apps.*.management.*",
+    "apps.payroll.services",
+]
+disable_error_code = [
+    "misc",
+    "attr-defined",
+    "no-untyped-call",
+    "unused-ignore",
+    "type-arg",
+    "no-any-return",
+    "union-attr",
+]
+
+[[tool.mypy.overrides]]
+# Models often need `# type: ignore[misc]` for the custom-manager generic pattern.
+# The runtime behavior is covered by the test suite; these are stub-vs-runtime gaps.
+module = ["apps.*.models"]
+disable_error_code = ["unused-ignore"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.dev"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py", "tests.py"]
+testpaths = ["apps", "services", "domain"]
+addopts = ["--strict-markers", "-ra"]

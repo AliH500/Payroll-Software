@@ -64,3 +64,8 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# Build outputs / vendored binaries
+bin/
+staticfiles/
+static/css/output.css

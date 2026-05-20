@@ -1,0 +1,18 @@
+{# Top navigation bar shown to all authenticated users. #}
+<header class="topnav sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6 shadow-sm no-print">
+    <div class="flex items-center gap-3">
+        <a href="{% url 'home' %}" class="text-lg font-semibold tracking-tight text-slate-900">Payroll</a>
+        {% if request.tenant %}
+            <span class="ml-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{{ request.tenant.name }}</span>
+        {% else %}
+            <span class="ml-2 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800">Platform</span>
+        {% endif %}
+    </div>
+    <div class="flex items-center gap-3 text-sm">
+        <span class="text-slate-500">{{ user.email }}</span>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="rounded border border-slate-200 px-2.5 py-1 font-medium text-slate-700 hover:bg-slate-50">Sign out</button>
+        </form>
+    </div>
+</header>
