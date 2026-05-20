@@ -16,7 +16,7 @@ A web app that lets HR payroll admins:
 
 ## Status
 
-**Planning → scaffolding** (May 2026). Tech stack locked; entity model drafted; v1 implementation in progress.
+**V1 feature-complete** (May 2026). All V1 capabilities implemented; 111 tests pass; ruff and mypy clean. Production deployment to Render is the next milestone.
 
 ## Tech Stack
 
@@ -34,9 +34,9 @@ A web app that lets HR payroll admins:
 
 The platform serves multiple companies from a single application instance. Cross-tenant data isolation is treated as a hard requirement and enforced by three layers:
 
-1. **Default `TenantManager`** on every multi-tenant model. Every queryset is auto-scoped to the current tenant. Tenant is resolved from the request context via middleware.
-2. **CI guard.** An automated test scans for queries on PII-sensitive models (Employee, Salary, Payslip, Bonus, Deduction, AuditLogEntry) that bypass the TenantManager. The build fails on violations.
-3. **Postgres Row-Level Security (RLS).** Defense in depth on the most sensitive tables (salary, passport, visa, bank account).
+1. **Default `TenantManager`** on every multi-tenant model. Every queryset is auto-scoped to the current tenant via a `ContextVar` set by `TenantResolutionMiddleware` (subdomain → tenant).
+2. **CI guards.** Two pytest-driven AST scanners fail the build on (a) `<PIIModel>.all_tenants` access without an inline `# tenant-bypass-allowed: <reason>` marker, and (b) `logger.*` / `print()` calls that reference forbidden salary or PII field names.
+3. **Postgres Row-Level Security.** Policies on the seven PII tables (Employee, Payslip, PayslipLine, Bonus, Deduction, ExpenseReimbursement, AuditLogEntry) filter by `current_setting('app.current_tenant_id')`, set per request by middleware. A non-superuser `payroll_app` role owns the schema so the policies are actually enforced; the bootstrap is automated via `manage.py bootstrap_rls_role`.
 
 ## Security & Data Handling
 
@@ -45,17 +45,19 @@ The platform serves multiple companies from a single application instance. Cross
 - **Password storage:** Argon2 (OWASP current standard).
 - **Backups:** managed daily backups via Render Postgres + weekly `pg_dump` → Backblaze B2 as a second copy.
 
-## MVP Scope (V1)
+## MVP Scope (V1) — shipped
 
 - Super-admin creates multiple companies
 - CSV bulk import of employee data per company
 - Add and remove employees
-- Run payroll calculations
-- View and download all payslips in one click
-- Role assignment (company admin and others)
-- Employee self-service portal (salary calculation + payment history)
-- Password reset flow (email-based)
-- Notification panel for visa / passport expiry (nice-to-have)
+- Run payroll calculations across fixed, hourly, and unit-based pay bases
+- View and download all payslips in one click (per-period print sheet)
+- Role assignment: super-admin, company admin, payroll manager, viewer, employee
+- Employee self-service portal — employee logs in to view only their own payslips and history
+- Password reset flow (email-based, Django built-in views)
+- Notification panel for visa / passport expiry on the dashboard
+- Three-layer multi-tenant defense: TenantManager + CI guards + Postgres RLS
+- Field-level encryption for PII (national ID, passport, visa, bank account) and all salary figures
 
 ## Out of Scope (V1)
 
@@ -85,8 +87,8 @@ PKR (Pakistan) and Birr (Ethiopia). Each company is bound to a single currency.
 
 ## Roadmap
 
-- **Q2 2026 (current):** scaffolding, core entity model, tenant resolution, super-admin company-provisioning flow
-- **Q3 2026:** payroll calculation engine, payslip generation, employee self-service portal, password reset, deployment to production
+- **Q2 2026:** V1 feature-complete — multi-tenant scaffolding, payroll engine, payslip generation, employee self-service, expiry alerts, three-layer tenant defense, encrypted PII at rest
+- **Q3 2026:** production deployment to Render (paid web + Postgres), client onboarding, real payroll runs
 - **By end of August 2026:** v1 actively used by the client company
 
 ## Background

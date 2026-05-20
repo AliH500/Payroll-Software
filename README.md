@@ -54,7 +54,7 @@ uv run python manage.py runserver
 ## Quality checks
 
 ```sh
-uv run pytest             # 93 tests, including CI guards and RLS isolation
+uv run pytest             # 111 tests, including CI guards and RLS isolation
 uv run ruff check .
 uv run mypy services/ domain/
 ```
