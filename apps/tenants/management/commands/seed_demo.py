@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import connection, transaction
 
 from apps.accounts.context import user_context
 from apps.accounts.models import Role, User
@@ -20,6 +20,13 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args: object, **options: object) -> None:
+        # Bypass RLS for this command (super-admin is the documented escape hatch).
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT set_config('app.is_super_admin', 'true', false), "
+                "set_config('app.current_tenant_id', '0', false)"
+            )
+
         super_admin, created_su = User.objects.get_or_create(
             email="ali@platform.local",
             defaults={
