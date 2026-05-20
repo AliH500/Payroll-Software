@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
+from django.db.models import Q
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
+
+EXPIRY_WINDOW_DAYS = 60
 
 
 class HomeView(TemplateView):
@@ -33,4 +36,33 @@ class HomeView(TemplateView):
             ctx["payslips_this_year"] = Payslip.objects.filter(
                 period__year=date.today().year,
             ).count()
+            ctx["expiring_docs"] = self._expiring_docs()
         return ctx
+
+    def _expiring_docs(self) -> list[dict[str, object]]:
+        """Active employees with passport or visa expiring within EXPIRY_WINDOW_DAYS."""
+        from apps.employees.models import Employee
+
+        today = date.today()
+        cutoff = today + timedelta(days=EXPIRY_WINDOW_DAYS)
+        candidates = Employee.objects.filter(is_active=True).filter(
+            Q(passport_expiry__lte=cutoff) | Q(visa_expiry__lte=cutoff),
+        )
+        rows: list[dict[str, object]] = []
+        for emp in candidates:
+            if emp.passport_expiry and emp.passport_expiry <= cutoff:
+                rows.append({
+                    "employee": emp,
+                    "doc_type": "Passport",
+                    "expiry": emp.passport_expiry,
+                    "days_remaining": (emp.passport_expiry - today).days,
+                })
+            if emp.visa_expiry and emp.visa_expiry <= cutoff:
+                rows.append({
+                    "employee": emp,
+                    "doc_type": "Visa",
+                    "expiry": emp.visa_expiry,
+                    "days_remaining": (emp.visa_expiry - today).days,
+                })
+        rows.sort(key=lambda r: r["days_remaining"])  # type: ignore[arg-type,return-value]
+        return rows
