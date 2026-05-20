@@ -29,6 +29,7 @@ class RunPayrollForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.period = period
         self.dynamic_employees: list[Employee] = list(
+            # tenant-bypass-allowed: form is filtered by period.company on the same line
             Employee.all_tenants.filter(  # type: ignore[misc]
                 company=period.company, is_active=True,
             ).exclude(pay_basis=PayBasis.FIXED)

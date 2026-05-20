@@ -14,9 +14,11 @@ class _BaseCompensationForm(forms.ModelForm):  # type: ignore[type-arg]
     def __init__(self, *args, tenant=None, **kwargs):  # type: ignore[no-untyped-def]
         super().__init__(*args, **kwargs)
         if tenant is not None:
+            # tenant-bypass-allowed: form is explicitly filtered by tenant on the same line
             self.fields["employee"].queryset = Employee.all_tenants.filter(  # type: ignore[union-attr,misc]
                 company=tenant, is_active=True,
             )
+            # tenant-bypass-allowed: form is explicitly filtered by tenant on the same line
             self.fields["period"].queryset = PayPeriod.all_tenants.filter(  # type: ignore[union-attr,misc]
                 company=tenant, status="open",
             )

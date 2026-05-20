@@ -119,5 +119,5 @@ django_settings_module = "config.settings.dev"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["test_*.py", "tests.py"]
-testpaths = ["apps", "services", "domain"]
+testpaths = ["apps", "services", "domain", "tests"]
 addopts = ["--strict-markers", "-ra"]

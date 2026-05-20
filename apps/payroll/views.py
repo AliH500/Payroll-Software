@@ -103,6 +103,7 @@ def run_payroll_view(request: HttpRequest, pk: int) -> HttpResponse:
         if form.is_valid():
             from apps.employees.models import Employee
 
+            # tenant-bypass-allowed: count is filtered by period.company on the same line
             eligible = Employee.all_tenants.filter(  # type: ignore[misc]
                 company=period.company, is_active=True,
             ).count()

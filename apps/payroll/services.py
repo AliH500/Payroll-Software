@@ -34,15 +34,20 @@ def run_payroll_for_period(
     hours_by_employee = hours_by_employee or {}
     units_by_employee = units_by_employee or {}
 
+    # tenant-bypass-allowed: payroll run is invoked from views that already gate by tenant
     Payslip.all_tenants.filter(period=period).delete()  # type: ignore[misc]
 
     employees = list(
+        # tenant-bypass-allowed: payroll run is invoked from views that already gate by tenant
         Employee.all_tenants.filter(company=period.company, is_active=True)  # type: ignore[misc]
     )
     created: list[Payslip] = []
     for emp in employees:
+        # tenant-bypass-allowed: payroll run is invoked from views that already gate by tenant
         bonuses = Bonus.all_tenants.filter(employee=emp, period=period)  # type: ignore[misc]
+        # tenant-bypass-allowed: payroll run is invoked from views that already gate by tenant
         deductions = Deduction.all_tenants.filter(employee=emp, period=period)  # type: ignore[misc]
+        # tenant-bypass-allowed: payroll run is invoked from views that already gate by tenant
         reimbursements = ExpenseReimbursement.all_tenants.filter(  # type: ignore[misc]
             employee=emp, period=period,
         )

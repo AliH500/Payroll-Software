@@ -9,6 +9,7 @@ class _BaseAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     search_fields = ("employee__first_name", "employee__last_name", "description")
 
     def get_queryset(self, request):  # type: ignore[no-untyped-def]
+        # tenant-bypass-allowed: Django admin is super-admin-only and crosses tenants
         return self.model.all_tenants.all()  # type: ignore[misc]
 
 

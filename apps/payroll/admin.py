@@ -25,4 +25,5 @@ class PayslipAdmin(admin.ModelAdmin[Payslip]):
     inlines = [PayslipLineInline]
 
     def get_queryset(self, request):  # type: ignore[no-untyped-def]
+        # tenant-bypass-allowed: Django admin is super-admin-only and crosses tenants
         return Payslip.all_tenants.all()  # type: ignore[misc]

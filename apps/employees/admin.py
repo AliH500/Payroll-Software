@@ -13,4 +13,5 @@ class EmployeeAdmin(admin.ModelAdmin[Employee]):
     readonly_fields = ("created_at", "updated_at")
 
     def get_queryset(self, request):  # type: ignore[no-untyped-def]
+        # tenant-bypass-allowed: Django admin is super-admin-only and crosses tenants
         return Employee.all_tenants.all()  # type: ignore[misc]
