@@ -41,6 +41,16 @@ class Employee(TenantAwareModel):
 
     hire_date = models.DateField()
     is_active = models.BooleanField(default=True)
+
+    user = models.OneToOneField(
+        "accounts.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="employee_profile",
+        help_text=_("Optional self-service portal account for this employee."),
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

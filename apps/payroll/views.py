@@ -14,17 +14,37 @@ from django.views.generic import (
     TemplateView,
 )
 
+from apps.accounts.models import Role
 from apps.payroll.forms import PayPeriodForm, RunPayrollForm
 from apps.payroll.models import PayPeriod, Payslip
 from apps.payroll.services import run_payroll_for_period
 
 
 class _TenantRequiredMixin(LoginRequiredMixin):
+    """Reject anonymous, non-tenant, and employee-role requests on admin payroll pages."""
+
     def dispatch(self, request: HttpRequest, *args, **kwargs):  # type: ignore[no-untyped-def]
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         if getattr(request, "tenant", None) is None:
             raise PermissionDenied("This page is only available on a tenant subdomain.")
+        if request.user.role == Role.EMPLOYEE:
+            raise PermissionDenied("This area is for company admins, not employee self-service.")
+        return super().dispatch(request, *args, **kwargs)
+
+
+class _EmployeeRequiredMixin(LoginRequiredMixin):
+    """Restricts access to employee-self-service-only routes."""
+
+    def dispatch(self, request: HttpRequest, *args, **kwargs):  # type: ignore[no-untyped-def]
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if getattr(request, "tenant", None) is None:
+            raise PermissionDenied("This page is only available on a tenant subdomain.")
+        if request.user.role != Role.EMPLOYEE:
+            raise PermissionDenied("Employee self-service only.")
+        if not hasattr(request.user, "employee_profile") or request.user.employee_profile is None:
+            raise PermissionDenied("No employee profile is linked to this account.")
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -71,6 +91,8 @@ def run_payroll_view(request: HttpRequest, pk: int) -> HttpResponse:
         return redirect(f"/accounts/login/?next={request.path}")
     if getattr(request, "tenant", None) is None:
         raise PermissionDenied("Tenant subdomain required.")
+    if request.user.role == Role.EMPLOYEE:
+        raise PermissionDenied("Employee self-service cannot run payroll.")
     period = get_object_or_404(PayPeriod, pk=pk)
     if period.is_closed:
         messages.error(request, "This period is closed.")
@@ -110,6 +132,8 @@ def close_period_view(request: HttpRequest, pk: int) -> HttpResponse:
         return redirect("login")
     if getattr(request, "tenant", None) is None:
         raise PermissionDenied("Tenant subdomain required.")
+    if request.user.role == Role.EMPLOYEE:
+        raise PermissionDenied("Employee self-service cannot close periods.")
     period = get_object_or_404(PayPeriod, pk=pk)
     period.status = "closed"
     period.closed_at = timezone.now()
@@ -133,6 +157,40 @@ class PayslipDetailView(_TenantRequiredMixin, DetailView[Payslip]):
     model = Payslip
     template_name = "payroll/payslip_detail.html"
     context_object_name = "payslip"
+
+    def dispatch(self, request: HttpRequest, *args, **kwargs):  # type: ignore[no-untyped-def]
+        if request.user.is_authenticated and request.user.role == Role.EMPLOYEE:
+            return redirect("payroll:my_payslip_detail", pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+
+class MyPayslipsView(_EmployeeRequiredMixin, ListView[Payslip]):
+    """Self-service: an employee sees only their own payslips."""
+
+    model = Payslip
+    template_name = "payroll/my_payslips.html"
+    context_object_name = "payslips"
+
+    def get_queryset(self):  # type: ignore[no-untyped-def]
+        return (
+            Payslip.objects.filter(employee__user=self.request.user)
+            .select_related("employee", "period")
+            .order_by("-period__year", "-period__month")
+        )
+
+
+class MyPayslipDetailView(_EmployeeRequiredMixin, DetailView[Payslip]):
+    """Self-service payslip detail. 403s on any payslip the employee does not own."""
+
+    model = Payslip
+    template_name = "payroll/payslip_detail.html"
+    context_object_name = "payslip"
+
+    def get_object(self, queryset=None):  # type: ignore[no-untyped-def]
+        payslip = super().get_object(queryset)
+        if payslip.employee.user_id != self.request.user.pk:
+            raise PermissionDenied("This payslip is not yours.")
+        return payslip
 
 
 class PeriodPayslipsPrintView(_TenantRequiredMixin, TemplateView):

@@ -1,14 +1,21 @@
 {# Left-side navigation. Items vary by tenant context vs platform. #}
 <aside class="w-60 shrink-0 border-r border-slate-200 bg-white px-4 py-6 no-print">
     {% if request.tenant %}
-        <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Tenant</p>
-        <nav class="space-y-1 text-sm">
-            <a href="{% url 'home' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Dashboard</a>
-            <a href="{% url 'employees:list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Employees</a>
-            <a href="{% url 'payroll:period_list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Pay periods</a>
-            <a href="{% url 'payroll:payslip_list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Payslips</a>
-            <a href="{% url 'compensation:list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Bonuses &amp; deductions</a>
-        </nav>
+        {% if request.user.role == "employee" %}
+            <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Self-service</p>
+            <nav class="space-y-1 text-sm">
+                <a href="{% url 'payroll:my_payslip_list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">My payslips</a>
+            </nav>
+        {% else %}
+            <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Tenant</p>
+            <nav class="space-y-1 text-sm">
+                <a href="{% url 'home' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Dashboard</a>
+                <a href="{% url 'employees:list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Employees</a>
+                <a href="{% url 'payroll:period_list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Pay periods</a>
+                <a href="{% url 'payroll:payslip_list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Payslips</a>
+                <a href="{% url 'compensation:list' %}" class="block rounded px-3 py-2 font-medium text-slate-700 hover:bg-slate-100">Bonuses &amp; deductions</a>
+            </nav>
+        {% endif %}
     {% else %}
         <p class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Platform</p>
         <nav class="space-y-1 text-sm">

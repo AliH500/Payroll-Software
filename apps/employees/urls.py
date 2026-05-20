@@ -12,4 +12,9 @@ urlpatterns = [
     path("<int:pk>/", views.EmployeeDetailView.as_view(), name="detail"),
     path("<int:pk>/edit/", views.EmployeeUpdateView.as_view(), name="update"),
     path("<int:pk>/delete/", views.EmployeeDeleteView.as_view(), name="delete"),
+    path(
+        "<int:pk>/create-portal-account/",
+        views.create_portal_account_view,
+        name="create_portal_account",
+    ),
 ]

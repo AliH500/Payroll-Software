@@ -143,8 +143,39 @@ class Command(BaseCommand):
                 units[bilal.pk] = _D("3200")
             run_payroll_for_period(period, hours_by_employee=hours, units_by_employee=units)
 
-        acme_count = Employee.all_tenants.filter(company=acme).count()  # type: ignore[misc]
-        beta_count = Employee.all_tenants.filter(company=beta).count()  # type: ignore[misc]
+        # Link a sample employee on each tenant to a self-service portal user.
+        def _link_employee_user(
+            tenant: Company, first: str, last: str, email: str, password: str,
+        ) -> None:
+            employee = Employee.all_tenants.filter(  # tenant-bypass-allowed: seed command
+                company=tenant, first_name=first, last_name=last,
+            ).first()
+            if employee is None:
+                return
+            if employee.user_id is not None:
+                return
+            portal_user, created_portal = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "is_staff": False,
+                    "is_superuser": False,
+                    "role": Role.EMPLOYEE,
+                    "company": tenant,
+                },
+            )
+            if created_portal:
+                portal_user.set_password(password)
+                portal_user.save()
+            employee.user = portal_user
+            employee.save(update_fields=["user", "updated_at"])
+
+        _link_employee_user(acme, "Mira", "Iqbal", "mira@acme.local", "demo-employee-2026")
+        _link_employee_user(beta, "Tigist", "Bekele", "tigist@beta.local", "demo-employee-2026")
+
+        # tenant-bypass-allowed: seed command
+        acme_count = Employee.all_tenants.filter(company=acme).count()
+        # tenant-bypass-allowed: seed command
+        beta_count = Employee.all_tenants.filter(company=beta).count()
         self.stdout.write(self.style.SUCCESS("Demo seed applied."))
         self.stdout.write("Super-admin: ali@platform.local / demo-platform-2026")
         self.stdout.write("  -> visit http://localhost:8000")
@@ -152,3 +183,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  -> visit http://acme.localhost:8000 ({acme_count} employees)")
         self.stdout.write("Beta admin (ETB):  bob@beta.local / demo-beta-2026")
         self.stdout.write(f"  -> visit http://beta.localhost:8000 ({beta_count} employees)")
+        self.stdout.write("Acme employee (PKR): mira@acme.local / demo-employee-2026")
+        self.stdout.write("  -> visit http://acme.localhost:8000 (employee self-service)")
+        self.stdout.write("Beta employee (ETB): tigist@beta.local / demo-employee-2026")
+        self.stdout.write("  -> visit http://beta.localhost:8000 (employee self-service)")

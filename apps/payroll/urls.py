@@ -13,4 +13,6 @@ urlpatterns = [
     path("periods/<int:pk>/print/", views.PeriodPayslipsPrintView.as_view(), name="period_print"),
     path("payslips/", views.PayslipListView.as_view(), name="payslip_list"),
     path("payslips/<int:pk>/", views.PayslipDetailView.as_view(), name="payslip_detail"),
+    path("my/", views.MyPayslipsView.as_view(), name="my_payslip_list"),
+    path("my/<int:pk>/", views.MyPayslipDetailView.as_view(), name="my_payslip_detail"),
 ]

@@ -14,6 +14,9 @@ class HomeView(TemplateView):
     def dispatch(self, request, *args, **kwargs):  # type: ignore[no-untyped-def]
         if not request.user.is_authenticated:
             return redirect("login")
+        from apps.accounts.models import Role
+        if request.user.role == Role.EMPLOYEE:
+            return redirect("payroll:my_payslip_list")
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):  # type: ignore[no-untyped-def]

@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
+from apps.accounts.models import Role
 from apps.compensation.forms import BonusForm, DeductionForm, ReimbursementForm
 from apps.compensation.models import Bonus, Deduction, ExpenseReimbursement
 
@@ -13,6 +14,8 @@ from apps.compensation.models import Bonus, Deduction, ExpenseReimbursement
 def _require_tenant(request: HttpRequest) -> None:
     if getattr(request, "tenant", None) is None:
         raise PermissionDenied("Tenant subdomain required.")
+    if request.user.is_authenticated and request.user.role == Role.EMPLOYEE:
+        raise PermissionDenied("Employee self-service is not allowed here.")
 
 
 @login_required
