@@ -42,7 +42,8 @@ def two_tenants(db):  # type: ignore[no-untyped-def]
 
 
 def _set_rls_session(tenant_id: int | None, *, super_admin: bool) -> None:
-    tid = str(tenant_id) if tenant_id is not None else "0"
+    # Match TenantResolutionMiddleware: empty string when no tenant.
+    tid = str(tenant_id) if tenant_id is not None else ""
     is_super = "true" if super_admin else "false"
     with connection.cursor() as cursor:
         cursor.execute(

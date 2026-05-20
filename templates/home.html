@@ -62,7 +62,7 @@
                             <td class="px-4 py-2 text-slate-700">{{ row.doc_type }}</td>
                             <td class="px-4 py-2 text-slate-700">{{ row.expiry|date:"Y-m-d" }}</td>
                             <td class="px-4 py-2 tabular-nums {% if row.days_remaining < 0 %}text-red-700 font-semibold{% elif row.days_remaining <= 14 %}text-amber-800 font-semibold{% else %}text-slate-700{% endif %}">
-                                {% if row.days_remaining < 0 %}Expired {{ row.days_remaining|stringformat:"d"|slice:"1:" }} day{{ row.days_remaining|add:"1"|pluralize }} ago{% else %}{{ row.days_remaining }} day{{ row.days_remaining|pluralize }}{% endif %}
+                                {% if row.days_remaining < 0 %}Expired {{ row.days_overdue }} day{{ row.days_overdue|pluralize }} ago{% else %}{{ row.days_remaining }} day{{ row.days_remaining|pluralize }}{% endif %}
                             </td>
                         </tr>
                         {% endfor %}

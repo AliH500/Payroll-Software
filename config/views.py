@@ -51,18 +51,22 @@ class HomeView(TemplateView):
         rows: list[dict[str, object]] = []
         for emp in candidates:
             if emp.passport_expiry and emp.passport_expiry <= cutoff:
+                days_remaining = (emp.passport_expiry - today).days
                 rows.append({
                     "employee": emp,
                     "doc_type": "Passport",
                     "expiry": emp.passport_expiry,
-                    "days_remaining": (emp.passport_expiry - today).days,
+                    "days_remaining": days_remaining,
+                    "days_overdue": -days_remaining if days_remaining < 0 else 0,
                 })
             if emp.visa_expiry and emp.visa_expiry <= cutoff:
+                days_remaining = (emp.visa_expiry - today).days
                 rows.append({
                     "employee": emp,
                     "doc_type": "Visa",
                     "expiry": emp.visa_expiry,
-                    "days_remaining": (emp.visa_expiry - today).days,
+                    "days_remaining": days_remaining,
+                    "days_overdue": -days_remaining if days_remaining < 0 else 0,
                 })
         rows.sort(key=lambda r: r["days_remaining"])  # type: ignore[arg-type,return-value]
         return rows

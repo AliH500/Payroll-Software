@@ -26,7 +26,7 @@ from pathlib import Path
 from services.observability.logging_filters import SENSITIVE_KEYS
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCAN_DIRS = ["apps", "services"]
+SCAN_DIRS = ["apps", "services", "config"]
 
 ALLOWED_PATH_PARTS = (
     "migrations/",

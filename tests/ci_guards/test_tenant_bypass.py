@@ -17,7 +17,7 @@ import ast
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCAN_DIRS = ["apps", "services"]
+SCAN_DIRS = ["apps", "services", "config"]
 
 # Models whose data is sensitive enough to require an explicit bypass marker.
 PII_MODELS = {

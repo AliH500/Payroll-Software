@@ -25,5 +25,5 @@ def _rls_super_admin_for_tests(request: pytest.FixtureRequest) -> None:
     with connection.cursor() as cursor:
         cursor.execute(
             "SELECT set_config('app.is_super_admin', 'true', false), "
-            "set_config('app.current_tenant_id', '0', false)"
+            "set_config('app.current_tenant_id', '', false)"
         )
