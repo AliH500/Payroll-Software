@@ -10,4 +10,5 @@ urlpatterns = [
     path("employees/", include("apps.employees.urls")),
     path("compensation/", include("apps.compensation.urls")),
     path("payroll/", include("apps.payroll.urls")),
+    path("attendance/", include("apps.attendance.urls")),
 ]

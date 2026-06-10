@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.employees",
     "apps.compensation",
     "apps.payroll",
+    "apps.attendance",
 ]
 
 AUTHENTICATION_BACKENDS = [
