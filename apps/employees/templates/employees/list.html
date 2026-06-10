@@ -18,6 +18,7 @@
         <table class="min-w-full divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50">
                 <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <th class="px-4 py-3">ID</th>
                     <th class="px-4 py-3">Name</th>
                     <th class="px-4 py-3">Pay basis</th>
                     <th class="px-4 py-3">Hired</th>
@@ -28,6 +29,7 @@
             <tbody class="divide-y divide-slate-100">
                 {% for e in employees %}
                 <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 font-mono text-xs text-slate-600">{{ e.employee_code }}</td>
                     <td class="px-4 py-3 font-medium text-slate-900">
                         <a href="{% url 'employees:detail' e.pk %}" class="hover:underline">{{ e.full_name }}</a>
                         {% if e.work_email %}<span class="ml-2 text-xs text-slate-500">{{ e.work_email }}</span>{% endif %}

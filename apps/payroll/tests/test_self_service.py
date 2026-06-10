@@ -36,12 +36,12 @@ def acme_with_employees(db):  # type: ignore[no-untyped-def]
     )
     with tenant_context(company), user_context(admin):
         emp_mine = Employee.objects.create(
-            company=company, first_name="Mine", last_name="Self",
+            company=company, employee_code="SS-1", first_name="Mine", last_name="Self",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("60000"),
             hire_date=date(2025, 1, 1), user=portal_user, work_email=portal_user.email,
         )
         emp_other = Employee.objects.create(
-            company=company, first_name="Other", last_name="Self",
+            company=company, employee_code="SS-2", first_name="Other", last_name="Self",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
             hire_date=date(2025, 1, 1), user=other_portal, work_email=other_portal.email,
         )

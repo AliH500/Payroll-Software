@@ -44,7 +44,7 @@ class TestEmployeeListView:
         client.force_login(alice)
         with tenant_context(acme):
             Employee.objects.create(
-                company=acme, first_name="Eve", last_name="Hassan",
+                company=acme, employee_code="EMP-1", first_name="Eve", last_name="Hassan",
                 pay_basis=PayBasis.FIXED, base_salary=Decimal("100"),
                 hire_date=date(2026, 1, 1),
             )
@@ -65,6 +65,7 @@ class TestEmployeeCreateView:
         resp = client.post(
             reverse("employees:create"),
             {
+                "employee_code": "EMP-100",
                 "first_name": "Mira",
                 "last_name": "Iqbal",
                 "work_email": "mira@acme.local",
@@ -88,6 +89,7 @@ class TestEmployeeCreateView:
         resp = client.post(
             reverse("employees:create"),
             {
+                "employee_code": "EMP-101",
                 "first_name": "Bad",
                 "last_name": "Form",
                 "pay_basis": "hourly",
@@ -106,7 +108,7 @@ class TestEmployeeUpdateAndDelete:
     def employee(self, acme):
         with tenant_context(acme):
             return Employee.objects.create(
-                company=acme, first_name="Sam", last_name="K",
+                company=acme, employee_code="EMP-1", first_name="Sam", last_name="K",
                 pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
                 hire_date=date(2026, 1, 1),
             )
@@ -116,6 +118,7 @@ class TestEmployeeUpdateAndDelete:
         resp = client.post(
             reverse("employees:update", args=[employee.pk]),
             {
+                "employee_code": "EMP-1",
                 "first_name": "Samira",
                 "last_name": "K",
                 "pay_basis": "fixed",

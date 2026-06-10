@@ -30,12 +30,12 @@ def two_tenants(db):  # type: ignore[no-untyped-def]
     )
     with tenant_context(acme), user_context(alice):
         Employee.objects.create(
-            company=acme, first_name="Acme", last_name="One",
+            company=acme, employee_code="EMP-1", first_name="Acme", last_name="One",
             pay_basis=PayBasis.FIXED, base_salary="50000", hire_date=date(2025, 1, 1),
         )
     with tenant_context(beta), user_context(bob):
         Employee.objects.create(
-            company=beta, first_name="Beta", last_name="One",
+            company=beta, employee_code="EMP-1", first_name="Beta", last_name="One",
             pay_basis=PayBasis.FIXED, base_salary="40000", hire_date=date(2025, 1, 1),
         )
     return acme, beta

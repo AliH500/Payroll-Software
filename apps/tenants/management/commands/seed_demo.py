@@ -76,13 +76,14 @@ class Command(BaseCommand):
 
         def _seed_employees(tenant: Company, owner: User, roster: list) -> None:
             with tenant_context(tenant), user_context(owner):
-                for first, last, basis, rate in roster:
+                for index, (first, last, basis, rate) in enumerate(roster, start=1):
                     if Employee.objects.filter(  # type: ignore[misc]
                         first_name=first, last_name=last
                     ).exists():
                         continue
                     payload = {
                         "company": tenant,
+                        "employee_code": f"{tenant.slug.upper()}-{index:03d}",
                         "first_name": first,
                         "last_name": last,
                         "pay_basis": basis,

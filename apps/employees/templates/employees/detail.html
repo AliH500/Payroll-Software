@@ -6,7 +6,8 @@
         <div>
             <h1 class="text-2xl font-semibold tracking-tight text-slate-900">{{ employee.full_name }}</h1>
             <p class="mt-1 text-sm text-slate-500">
-                {{ employee.get_pay_basis_display }}
+                <span class="font-mono text-xs text-slate-600">{{ employee.employee_code }}</span>
+                · {{ employee.get_pay_basis_display }}
                 {% if employee.is_active %}
                     · <span class="text-emerald-700">Active</span>
                 {% else %}

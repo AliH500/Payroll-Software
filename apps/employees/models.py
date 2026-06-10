@@ -20,6 +20,9 @@ class PayBasis(models.TextChoices):
 class Employee(TenantAwareModel):
     """An employee of a Company. PII identifiers and salary values are encrypted at rest."""
 
+    # Company-assigned identifier, unique within the company. Used to map CSV
+    # imports (employees and attendance) to the right person. Not PII — plain text.
+    employee_code = models.CharField(max_length=64)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     work_email = models.EmailField(blank=True)
@@ -58,6 +61,12 @@ class Employee(TenantAwareModel):
         verbose_name = _("employee")
         verbose_name_plural = _("employees")
         ordering = ["last_name", "first_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["company", "employee_code"],
+                name="unique_company_employee_code",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name}".strip() or f"Employee #{self.pk}"

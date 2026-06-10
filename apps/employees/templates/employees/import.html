@@ -5,8 +5,8 @@
     <header>
         <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Import employees from CSV</h1>
         <p class="mt-1 text-sm text-slate-500">
-            Required headers: <code class="text-xs">first_name, last_name, pay_basis, hire_date</code>.
-            Optional columns: <code class="text-xs">{{ headers|join:", " }}</code>.
+            Required headers: <code class="text-xs">employee_code, first_name, last_name, pay_basis, hire_date</code>.
+            Full column set: <code class="text-xs">{{ headers|join:", " }}</code>.
             <a href="{% url 'employees:import_template' %}" class="text-slate-900 underline">Download blank template</a>.
         </p>
     </header>

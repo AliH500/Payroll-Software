@@ -13,6 +13,7 @@ from apps.employees.models import Employee, PayBasis
 from apps.tenants.models import Company
 
 REQUIRED_COLUMNS = (
+    "employee_code",
     "first_name",
     "last_name",
     "pay_basis",
@@ -88,13 +89,14 @@ def import_employees(company: Company, csv_data: bytes | str) -> list[RowOutcome
             message=f"Missing required column(s): {', '.join(missing)}",
         )]
 
+    seen_codes: set[str] = set()
     outcomes: list[RowOutcome] = []
     for line_number, row in enumerate(reader, start=2):
         try:
-            employee = _row_to_employee(company, row)
+            employee = _row_to_employee(company, row, seen_codes)
             outcomes.append(RowOutcome(
                 line_number=line_number, ok=True,
-                message=f"Imported {employee.full_name}",
+                message=f"Imported {employee.full_name} ({employee.employee_code})",
                 employee_id=employee.pk,
             ))
         except ValueError as exc:
@@ -102,7 +104,21 @@ def import_employees(company: Company, csv_data: bytes | str) -> list[RowOutcome
     return outcomes
 
 
-def _row_to_employee(company: Company, row: dict[str, str]) -> Employee:
+def _resolve_employee_code(company: Company, row: dict[str, str], seen_codes: set[str]) -> str:
+    code = (row.get("employee_code") or "").strip()
+    if not code:
+        raise ValueError("employee_code is required")
+    if code in seen_codes:
+        raise ValueError(f"duplicate employee_code {code!r} in this file")
+    # tenant-bypass-allowed: uniqueness check is scoped to the passed company
+    if Employee.all_tenants.filter(company=company, employee_code=code).exists():
+        raise ValueError(f"employee_code {code!r} already exists for this company")
+    seen_codes.add(code)
+    return code
+
+
+def _row_to_employee(company: Company, row: dict[str, str], seen_codes: set[str]) -> Employee:
+    code = _resolve_employee_code(company, row, seen_codes)
     basis = (row.get("pay_basis") or "").strip().lower()
     if basis not in PayBasis.values:
         raise ValueError(
@@ -110,6 +126,7 @@ def _row_to_employee(company: Company, row: dict[str, str]) -> Employee:
         )
     payload = dict(
         company=company,
+        employee_code=code,
         first_name=row.get("first_name", "").strip(),
         last_name=row.get("last_name", "").strip(),
         work_email=row.get("work_email", "").strip(),

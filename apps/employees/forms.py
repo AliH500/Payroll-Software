@@ -13,6 +13,7 @@ class EmployeeForm(forms.ModelForm[Employee]):
     class Meta:
         model = Employee
         fields = [
+            "employee_code",
             "first_name",
             "last_name",
             "work_email",
@@ -38,11 +39,27 @@ class EmployeeForm(forms.ModelForm[Employee]):
 
     def __init__(self, *args, tenant=None, **kwargs):  # type: ignore[no-untyped-def]
         super().__init__(*args, **kwargs)
+        self.tenant = tenant
+        self.fields["employee_code"].label = "Employee ID"
+        self.fields["employee_code"].help_text = "Unique within your company."
         if tenant is not None:
             currency = tenant.currency
             self.fields["base_salary"].label = f"Base salary ({currency})"
             self.fields["hourly_rate"].label = f"Hourly rate ({currency})"
             self.fields["unit_rate"].label = f"Unit rate ({currency})"
+
+    def clean_employee_code(self) -> str:
+        code = (self.cleaned_data.get("employee_code") or "").strip()
+        if not code:
+            raise ValidationError(_("Employee ID is required."))
+        if self.tenant is not None:
+            # tenant-bypass-allowed: uniqueness check is scoped to the form's tenant
+            dupes = Employee.all_tenants.filter(company=self.tenant, employee_code=code)
+            if self.instance.pk:
+                dupes = dupes.exclude(pk=self.instance.pk)
+            if dupes.exists():
+                raise ValidationError(_("An employee with this ID already exists."))
+        return code
 
     def clean(self) -> dict[str, object] | None:
         cleaned = super().clean()

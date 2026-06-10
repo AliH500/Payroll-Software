@@ -31,6 +31,7 @@ def test_encrypted_field_round_trip(acme):
     with tenant_context(acme):
         employee = Employee.objects.create(
             company=acme,
+            employee_code="EMP-1",
             first_name="Bob",
             last_name="Khan",
             national_id="35202-1234567-8",
@@ -47,17 +48,17 @@ def test_encrypted_field_round_trip(acme):
 def test_pay_rate_resolves_by_basis(acme):
     with tenant_context(acme):
         fixed = Employee.objects.create(
-            company=acme, first_name="A", last_name="A",
+            company=acme, employee_code="EMP-A", first_name="A", last_name="A",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("100"),
             hire_date=date(2026, 1, 1),
         )
         hourly = Employee.objects.create(
-            company=acme, first_name="B", last_name="B",
+            company=acme, employee_code="EMP-B", first_name="B", last_name="B",
             pay_basis=PayBasis.HOURLY, hourly_rate=Decimal("50"),
             hire_date=date(2026, 1, 1),
         )
         unit = Employee.objects.create(
-            company=acme, first_name="C", last_name="C",
+            company=acme, employee_code="EMP-C", first_name="C", last_name="C",
             pay_basis=PayBasis.UNIT, unit_rate=Decimal("3.50"),
             hire_date=date(2026, 1, 1),
         )
@@ -70,7 +71,7 @@ def test_pay_rate_resolves_by_basis(acme):
 def test_pay_rate_money_uses_company_currency(acme):
     with tenant_context(acme):
         e = Employee.objects.create(
-            company=acme, first_name="X", last_name="Y",
+            company=acme, employee_code="EMP-1", first_name="X", last_name="Y",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("100"),
             hire_date=date(2026, 1, 1),
         )
@@ -85,13 +86,13 @@ def test_tenant_manager_scopes_employees(acme):
     other = Company.objects.create(slug="beta", name="Beta", country="ET", currency="ETB")
     with tenant_context(acme):
         Employee.objects.create(
-            company=acme, first_name="Acme", last_name="Worker",
+            company=acme, employee_code="EMP-1", first_name="Acme", last_name="Worker",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("100"),
             hire_date=date(2026, 1, 1),
         )
     with tenant_context(other):
         Employee.objects.create(
-            company=other, first_name="Beta", last_name="Worker",
+            company=other, employee_code="EMP-1", first_name="Beta", last_name="Worker",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("100"),
             hire_date=date(2026, 1, 1),
         )
@@ -108,7 +109,7 @@ def test_tenant_manager_scopes_employees(acme):
 def test_employee_save_emits_audit_entry(acme, alice):
     with tenant_context(acme), user_context(alice):
         employee = Employee.objects.create(
-            company=acme, first_name="Audit", last_name="Me",
+            company=acme, employee_code="EMP-1", first_name="Audit", last_name="Me",
             pay_basis=PayBasis.HOURLY, hourly_rate=Decimal("25"),
             hire_date=date(2026, 1, 1),
         )
@@ -126,7 +127,7 @@ def test_employee_save_emits_audit_entry(acme, alice):
 def test_employee_delete_emits_audit_entry(acme, alice):
     with tenant_context(acme), user_context(alice):
         e = Employee.objects.create(
-            company=acme, first_name="Bye", last_name="Felicia",
+            company=acme, employee_code="EMP-1", first_name="Bye", last_name="Felicia",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("100"),
             hire_date=date(2026, 1, 1),
         )

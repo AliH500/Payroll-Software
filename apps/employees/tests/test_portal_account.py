@@ -26,12 +26,12 @@ def acme_admin_and_employee(db):  # type: ignore[no-untyped-def]
     )
     with tenant_context(company), user_context(admin):
         emp = Employee.objects.create(
-            company=company, first_name="Sara", last_name="Khan",
+            company=company, employee_code="PA-1", first_name="Sara", last_name="Khan",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("70000"),
             hire_date=date(2025, 1, 1), work_email="sara@acme.local",
         )
         emp_no_email = Employee.objects.create(
-            company=company, first_name="No", last_name="Email",
+            company=company, employee_code="PA-2", first_name="No", last_name="Email",
             pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
             hire_date=date(2025, 1, 1),
         )
