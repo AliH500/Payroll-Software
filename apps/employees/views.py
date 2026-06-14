@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
+from django.db.models import ProtectedError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -95,7 +96,16 @@ class EmployeeDeleteView(_TenantRequiredMixin, DeleteView):  # type: ignore[type
 
     def form_valid(self, form):  # type: ignore[no-untyped-def]
         name = self.object.full_name
-        response = super().form_valid(form)
+        pk = self.object.pk
+        try:
+            response = super().form_valid(form)
+        except ProtectedError:
+            messages.error(
+                self.request,
+                f"{name} has payroll history and cannot be deleted. "
+                "Deactivate them instead: edit the employee and uncheck 'Active'.",
+            )
+            return redirect("employees:detail", pk=pk)
         messages.success(self.request, f"Removed {name}.")
         return response
 

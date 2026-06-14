@@ -141,3 +141,44 @@ class TestEmployeeUpdateAndDelete:
         )
         assert resp.status_code == 302
         assert not Employee.all_tenants.filter(pk=employee.pk).exists()
+
+    def test_delete_blocked_by_payroll_history(self, client, acme, alice, employee):
+        from apps.payroll.models import PayPeriod, Payslip
+
+        client.force_login(alice)
+        with tenant_context(acme):
+            period = PayPeriod.objects.create(company=acme, year=2026, month=1)
+            Payslip.objects.create(
+                company=acme, employee=employee, period=period,
+                base_pay=Decimal("50000"), bonuses_total=Decimal("0"),
+                deductions_total=Decimal("0"), reimbursements_total=Decimal("0"),
+                net_pay=Decimal("50000"), currency="PKR",
+            )
+        resp = client.post(
+            reverse("employees:delete", args=[employee.pk]),
+            HTTP_HOST="acme.localhost",
+        )
+        assert resp.status_code == 302
+        assert resp.url == reverse("employees:detail", args=[employee.pk])
+        assert Employee.all_tenants.filter(pk=employee.pk).exists()
+
+    def test_delete_blocked_by_attendance(self, client, acme, alice, employee):
+        from apps.attendance.models import AttendanceRecord, AttendanceSheet
+        from apps.payroll.models import PayPeriod
+
+        client.force_login(alice)
+        with tenant_context(acme):
+            period = PayPeriod.objects.create(company=acme, year=2026, month=2)
+            sheet = AttendanceSheet.objects.create(company=acme, period=period)
+            AttendanceRecord.objects.create(
+                company=acme, sheet=sheet, employee=employee, days_present=20,
+            )
+        resp = client.post(
+            reverse("employees:delete", args=[employee.pk]),
+            HTTP_HOST="acme.localhost",
+        )
+        # Attendance records are PROTECTed; deletion is refused gracefully, not 500.
+        assert resp.status_code == 302
+        assert resp.url == reverse("employees:detail", args=[employee.pk])
+        assert Employee.all_tenants.filter(pk=employee.pk).exists()
+        assert AttendanceRecord.all_tenants.filter(employee_id=employee.pk).exists()
