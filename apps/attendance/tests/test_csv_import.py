@@ -15,8 +15,8 @@ from apps.tenants.context import tenant_context
 from apps.tenants.models import Company
 
 HEADER = (
-    "employee_code,days_present,days_late,days_absent,"
-    "days_absent_without_leave,days_leave"
+    "employee_code,days_present,days_late,days_total_absent,"
+    "days_absent,days_leave"
 )
 
 
@@ -36,15 +36,15 @@ def setup(db):  # type: ignore[no-untyped-def]
 @pytest.mark.django_db
 def test_happy_path_creates_record(setup):
     company, emp, sheet = setup
-    csv = f"{HEADER}\nEMP-1,20,2,1,1,3\n"
+    csv = f"{HEADER}\nEMP-1,20,2,4,1,3\n"
     with tenant_context(company):
         outcomes = import_attendance(sheet, csv)
         record = AttendanceRecord.objects.get(sheet=sheet, employee=emp)
     assert outcomes[0].ok is True
     assert record.days_present == 20
     assert record.days_late == 2
+    assert record.days_total_absent == 4
     assert record.days_absent == 1
-    assert record.days_absent_without_leave == 1
     assert record.days_leave == 3
 
 
@@ -52,7 +52,7 @@ def test_happy_path_creates_record(setup):
 def test_reimport_updates_existing_record(setup):
     company, emp, sheet = setup
     with tenant_context(company):
-        import_attendance(sheet, f"{HEADER}\nEMP-1,20,2,1,1,3\n")
+        import_attendance(sheet, f"{HEADER}\nEMP-1,20,2,4,1,3\n")
         import_attendance(sheet, f"{HEADER}\nEMP-1,22,0,0,0,0\n")
         record = AttendanceRecord.objects.get(sheet=sheet, employee=emp)
         assert AttendanceRecord.objects.filter(sheet=sheet).count() == 1
@@ -87,6 +87,16 @@ def test_negative_count_is_rejected(setup):
         outcomes = import_attendance(sheet, f"{HEADER}\nEMP-1,-3,0,0,0,0\n")
     assert outcomes[0].ok is False
     assert "negative" in outcomes[0].message
+
+
+@pytest.mark.django_db
+def test_total_absent_mismatch_is_rejected(setup):
+    company, _emp, sheet = setup
+    # days_total_absent=5 but days_absent + days_leave = 1 + 3 = 4.
+    with tenant_context(company):
+        outcomes = import_attendance(sheet, f"{HEADER}\nEMP-1,20,0,5,1,3\n")
+    assert outcomes[0].ok is False
+    assert "days_total_absent" in outcomes[0].message
 
 
 @pytest.mark.django_db

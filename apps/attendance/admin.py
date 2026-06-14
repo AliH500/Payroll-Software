@@ -18,7 +18,7 @@ class AttendanceSheetAdmin(admin.ModelAdmin[AttendanceSheet]):
 class AttendanceRecordAdmin(admin.ModelAdmin[AttendanceRecord]):
     list_display = (
         "employee", "sheet", "days_present", "days_late",
-        "days_absent", "days_absent_without_leave", "days_leave",
+        "days_total_absent", "days_absent", "days_leave",
     )
     list_filter = ("company",)
     search_fields = ("employee__employee_code", "employee__first_name", "employee__last_name")

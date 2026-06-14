@@ -22,12 +22,12 @@ from apps.attendance.models import AttendanceRecord, AttendanceSheet
 from apps.employees.models import Employee
 from apps.payroll.models import PayPeriod
 
-# Maps a grid input prefix to the matching model field.
+# Maps a grid input prefix to the matching model field. days_total_absent is not
+# entered directly — it is computed as days_absent + days_leave on save.
 _GRID_FIELDS = {
     "present": "days_present",
     "late": "days_late",
     "absent": "days_absent",
-    "awol": "days_absent_without_leave",
     "leave": "days_leave",
 }
 
@@ -92,6 +92,7 @@ def _parse_grid(post: dict[str, str], employees: list[Employee]) -> tuple[
                 break
             row[field] = parsed
         else:
+            row["days_total_absent"] = row["days_absent"] + row["days_leave"]
             values[emp.pk] = row
     return values, errors
 

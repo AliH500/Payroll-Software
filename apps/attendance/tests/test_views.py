@@ -45,8 +45,7 @@ def test_saving_sheet_records_total_days_and_grid(setup):
         "total_working_days": "22",
         f"present_{emp.pk}": "20",
         f"late_{emp.pk}": "2",
-        f"absent_{emp.pk}": "0",
-        f"awol_{emp.pk}": "0",
+        f"absent_{emp.pk}": "1",
         f"leave_{emp.pk}": "2",
     }, **HOST)
     assert resp.status_code == 302
@@ -54,7 +53,10 @@ def test_saving_sheet_records_total_days_and_grid(setup):
     assert sheet.total_working_days == 22
     record = AttendanceRecord.all_tenants.get(sheet=sheet, employee=emp)
     assert record.days_present == 20
+    assert record.days_absent == 1
     assert record.days_leave == 2
+    # Total absent is computed from absent + leave on save.
+    assert record.days_total_absent == 3
 
 
 @pytest.mark.django_db
@@ -67,7 +69,6 @@ def test_invalid_grid_value_does_not_save(setup):
         f"present_{emp.pk}": "abc",
         f"late_{emp.pk}": "0",
         f"absent_{emp.pk}": "0",
-        f"awol_{emp.pk}": "0",
         f"leave_{emp.pk}": "0",
     }, **HOST)
     assert resp.status_code == 200
@@ -96,7 +97,6 @@ def test_closed_period_locks_attendance(setup):
         f"present_{emp.pk}": "20",
         f"late_{emp.pk}": "0",
         f"absent_{emp.pk}": "0",
-        f"awol_{emp.pk}": "0",
         f"leave_{emp.pk}": "0",
     }, **HOST)
     assert resp.status_code == 200
@@ -113,7 +113,6 @@ def test_total_working_days_over_31_is_rejected(setup):
         f"present_{emp.pk}": "20",
         f"late_{emp.pk}": "0",
         f"absent_{emp.pk}": "0",
-        f"awol_{emp.pk}": "0",
         f"leave_{emp.pk}": "0",
     }, **HOST)
     assert resp.status_code == 200
@@ -145,4 +144,4 @@ def test_template_download(setup):
     assert resp.status_code == 200
     assert resp["Content-Type"] == "text/csv"
     assert b"employee_code" in resp.content
-    assert b"days_absent_without_leave" in resp.content
+    assert b"days_total_absent" in resp.content

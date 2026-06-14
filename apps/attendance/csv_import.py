@@ -14,8 +14,8 @@ from apps.tenants.models import Company
 COUNT_COLUMNS = (
     "days_present",
     "days_late",
+    "days_total_absent",
     "days_absent",
-    "days_absent_without_leave",
     "days_leave",
 )
 REQUIRED_COLUMNS = ("employee_code", *COUNT_COLUMNS)
@@ -97,6 +97,11 @@ def _ingest_row(
         raise ValueError(f"no employee with code {code!r} in this company") from exc
 
     counts = {column: _parse_count(row, column) for column in COUNT_COLUMNS}
+    if counts["days_total_absent"] != counts["days_absent"] + counts["days_leave"]:
+        raise ValueError(
+            "days_total_absent must equal days_absent + days_leave "
+            f"({counts['days_absent']} + {counts['days_leave']})"
+        )
     seen_codes.add(code)
     AttendanceRecord.all_tenants.update_or_create(
         sheet=sheet, employee=employee,

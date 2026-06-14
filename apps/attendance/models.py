@@ -48,8 +48,10 @@ class AttendanceRecord(TenantAwareModel):
 
     days_present = models.PositiveSmallIntegerField(default=0)
     days_late = models.PositiveSmallIntegerField(default=0)
+    # Total absent is the sum of plain absences and leaves; kept explicit so the
+    # CSV can be validated against days_absent + days_leave.
+    days_total_absent = models.PositiveSmallIntegerField(default=0)
     days_absent = models.PositiveSmallIntegerField(default=0)
-    days_absent_without_leave = models.PositiveSmallIntegerField(default=0)
     days_leave = models.PositiveSmallIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
