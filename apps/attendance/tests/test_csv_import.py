@@ -9,14 +9,14 @@ import pytest
 
 from apps.attendance.csv_import import import_attendance
 from apps.attendance.models import AttendanceRecord, AttendanceSheet
-from apps.employees.models import Employee, PayBasis
+from apps.employees.models import Employee
 from apps.payroll.models import PayPeriod
 from apps.tenants.context import tenant_context
 from apps.tenants.models import Company
 
 HEADER = (
     "employee_code,days_present,days_late,days_total_absent,"
-    "days_absent,days_leave"
+    "days_absent,days_leave,off_days"
 )
 
 
@@ -26,7 +26,7 @@ def setup(db):  # type: ignore[no-untyped-def]
     with tenant_context(company):
         emp = Employee.objects.create(
             company=company, employee_code="EMP-1", first_name="Ayesha", last_name="Khan",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("90000"), hire_date=date(2025, 1, 1),
+            salary=Decimal("90000"), hire_date=date(2025, 1, 1),
         )
         period = PayPeriod.objects.create(company=company, year=2026, month=5)
         sheet = AttendanceSheet.objects.create(company=company, period=period)
@@ -36,7 +36,7 @@ def setup(db):  # type: ignore[no-untyped-def]
 @pytest.mark.django_db
 def test_happy_path_creates_record(setup):
     company, emp, sheet = setup
-    csv = f"{HEADER}\nEMP-1,20,2,4,1,3\n"
+    csv = f"{HEADER}\nEMP-1,20,2,4,1,3,8\n"
     with tenant_context(company):
         outcomes = import_attendance(sheet, csv)
         record = AttendanceRecord.objects.get(sheet=sheet, employee=emp)
@@ -46,6 +46,7 @@ def test_happy_path_creates_record(setup):
     assert record.days_total_absent == 4
     assert record.days_absent == 1
     assert record.days_leave == 3
+    assert record.off_days == 8
 
 
 @pytest.mark.django_db
@@ -106,7 +107,7 @@ def test_other_company_code_is_not_mapped(setup):
     with tenant_context(other):
         Employee.objects.create(
             company=other, employee_code="EMP-1", first_name="Beta", last_name="Worker",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("1"), hire_date=date(2025, 1, 1),
+            salary=Decimal("1"), hire_date=date(2025, 1, 1),
         )
     # The sheet belongs to `company`; EMP-1 exists in `other` but must not be reachable.
     with tenant_context(company):

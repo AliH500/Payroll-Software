@@ -13,7 +13,7 @@ from django.db import connection
 
 from apps.accounts.context import user_context
 from apps.accounts.models import Role, User
-from apps.employees.models import Employee, PayBasis
+from apps.employees.models import Employee
 from apps.tenants.context import tenant_context
 from apps.tenants.models import Company
 
@@ -31,12 +31,12 @@ def two_tenants(db):  # type: ignore[no-untyped-def]
     with tenant_context(acme), user_context(alice):
         Employee.objects.create(
             company=acme, employee_code="EMP-1", first_name="Acme", last_name="One",
-            pay_basis=PayBasis.FIXED, base_salary="50000", hire_date=date(2025, 1, 1),
+            salary="50000", hire_date=date(2025, 1, 1),
         )
     with tenant_context(beta), user_context(bob):
         Employee.objects.create(
             company=beta, employee_code="EMP-1", first_name="Beta", last_name="One",
-            pay_basis=PayBasis.FIXED, base_salary="40000", hire_date=date(2025, 1, 1),
+            salary="40000", hire_date=date(2025, 1, 1),
         )
     return acme, beta
 

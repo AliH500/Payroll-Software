@@ -15,9 +15,9 @@ SENSITIVE_KEYS: Final[frozenset[str]] = frozenset(
     {
         # salary and salary-derived figures
         "salary",
-        "base_salary",
-        "hourly_rate",
-        "unit_rate",
+        "conveyance_allowance",
+        "attendance_allowance",
+        "performance_bonus",
         "deduction",
         "deduction_amount",
         "bonus",

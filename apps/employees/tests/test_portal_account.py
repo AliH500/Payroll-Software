@@ -10,7 +10,7 @@ from django.test import Client
 
 from apps.accounts.context import user_context
 from apps.accounts.models import Role, User
-from apps.employees.models import Employee, PayBasis
+from apps.employees.models import Employee
 from apps.tenants.context import tenant_context
 from apps.tenants.models import Company
 
@@ -27,12 +27,12 @@ def acme_admin_and_employee(db):  # type: ignore[no-untyped-def]
     with tenant_context(company), user_context(admin):
         emp = Employee.objects.create(
             company=company, employee_code="PA-1", first_name="Sara", last_name="Khan",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("70000"),
+            salary=Decimal("70000"),
             hire_date=date(2025, 1, 1), work_email="sara@acme.local",
         )
         emp_no_email = Employee.objects.create(
             company=company, employee_code="PA-2", first_name="No", last_name="Email",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
+            salary=Decimal("50000"),
             hire_date=date(2025, 1, 1),
         )
     viewer = User.objects.create_user(

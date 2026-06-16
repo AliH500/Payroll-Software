@@ -41,6 +41,7 @@
                         <th class="px-3 py-3 text-center">Late</th>
                         <th class="px-3 py-3 text-center">Absent</th>
                         <th class="px-3 py-3 text-center">Leave</th>
+                        <th class="px-3 py-3 text-center">Off days</th>
                         <th class="px-3 py-3 text-center">Total absent</th>
                     </tr>
                 </thead>
@@ -56,10 +57,11 @@
                         <td class="px-3 py-2 text-center"><input type="number" min="0" name="late_{{ row.employee.pk }}" value="{{ row.record.days_late|default:0 }}" {% if period.is_closed %}disabled{% endif %} class="att-input"></td>
                         <td class="px-3 py-2 text-center"><input type="number" min="0" name="absent_{{ row.employee.pk }}" value="{{ row.record.days_absent|default:0 }}" {% if period.is_closed %}disabled{% endif %} class="att-input"></td>
                         <td class="px-3 py-2 text-center"><input type="number" min="0" name="leave_{{ row.employee.pk }}" value="{{ row.record.days_leave|default:0 }}" {% if period.is_closed %}disabled{% endif %} class="att-input"></td>
+                        <td class="px-3 py-2 text-center"><input type="number" min="0" name="off_{{ row.employee.pk }}" value="{{ row.record.off_days|default:0 }}" {% if period.is_closed %}disabled{% endif %} class="att-input"></td>
                         <td class="px-3 py-2 text-center font-medium text-slate-700">{{ row.record.days_total_absent|default:0 }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">No active employees to record attendance for.</td></tr>
+                    <tr><td colspan="8" class="px-4 py-6 text-center text-slate-500">No active employees to record attendance for.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

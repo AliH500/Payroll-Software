@@ -37,6 +37,7 @@
                 <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                     <th class="px-4 py-3">Employee</th>
                     <th class="px-4 py-3">Base</th>
+                    <th class="px-4 py-3">Allowances</th>
                     <th class="px-4 py-3">Bonuses</th>
                     <th class="px-4 py-3">Deductions</th>
                     <th class="px-4 py-3">Net pay</th>
@@ -47,6 +48,7 @@
                 <tr class="hover:bg-slate-50">
                     <td class="px-4 py-3 font-medium text-slate-900"><a href="{% url 'payroll:payslip_detail' p.pk %}" class="hover:underline">{{ p.employee.full_name }}</a></td>
                     <td class="px-4 py-3 tabular-nums">{{ p.base_pay_money.format }}</td>
+                    <td class="px-4 py-3 tabular-nums text-emerald-700">{{ p.allowances_money.format }}</td>
                     <td class="px-4 py-3 tabular-nums text-emerald-700">{{ p.bonuses_money.format }}</td>
                     <td class="px-4 py-3 tabular-nums text-red-700">{{ p.deductions_money.format }}</td>
                     <td class="px-4 py-3 font-semibold text-slate-900 tabular-nums">{{ p.net_pay_money.format }}</td>

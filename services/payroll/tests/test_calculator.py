@@ -1,7 +1,5 @@
 from decimal import Decimal
 
-import pytest
-
 from services.payroll.calculator import (
     CompensationInput,
     PayrollInput,
@@ -11,12 +9,10 @@ from services.payroll.calculator import (
 
 def _input(**overrides):
     defaults = dict(
-        pay_basis="fixed",
-        base_salary=Decimal("100000"),
-        hourly_rate=None,
-        unit_rate=None,
-        hours_worked=None,
-        units_processed=None,
+        salary=Decimal("100000"),
+        conveyance_allowance=Decimal("0"),
+        attendance_allowance=Decimal("0"),
+        performance_bonus=Decimal("0"),
         bonuses=(),
         deductions=(),
         reimbursements=(),
@@ -26,30 +22,45 @@ def _input(**overrides):
     return PayrollInput(**defaults)
 
 
-def test_fixed_salary_simple():
+def test_salary_only():
     r = calculate_payslip(_input())
     assert r.base_pay == Decimal("100000.00")
+    assert r.allowances_total == Decimal("0.00")
     assert r.net_pay == Decimal("100000.00")
+    assert [ln.line_type for ln in r.lines] == ["base"]
 
 
-def test_hourly_pay():
+def test_allowances_roll_into_allowances_total():
     r = calculate_payslip(_input(
-        pay_basis="hourly", base_salary=None,
-        hourly_rate=Decimal("500"), hours_worked=Decimal("160"),
+        conveyance_allowance=Decimal("5000"),
+        attendance_allowance=Decimal("3000"),
     ))
-    assert r.base_pay == Decimal("80000.00")
-    assert r.net_pay == Decimal("80000.00")
+    assert r.allowances_total == Decimal("8000.00")
+    assert r.bonuses_total == Decimal("0.00")
+    assert r.net_pay == Decimal("108000.00")
+    types = [ln.line_type for ln in r.lines]
+    assert types == ["base", "allowance", "allowance"]
 
 
-def test_unit_pay():
+def test_zero_allowance_emits_no_line():
     r = calculate_payslip(_input(
-        pay_basis="unit", base_salary=None,
-        unit_rate=Decimal("12.50"), units_processed=Decimal("4000"),
+        conveyance_allowance=Decimal("0"),
+        attendance_allowance=Decimal("2000"),
     ))
-    assert r.base_pay == Decimal("50000.00")
+    descriptions = [ln.description for ln in r.lines]
+    assert "Conveyance allowance" not in descriptions
+    assert "Attendance allowance" in descriptions
 
 
-def test_bonuses_and_reimbursements_increase_net():
+def test_performance_bonus_rolls_into_bonuses_total():
+    r = calculate_payslip(_input(performance_bonus=Decimal("8000")))
+    assert r.allowances_total == Decimal("0.00")
+    assert r.bonuses_total == Decimal("8000.00")
+    assert r.net_pay == Decimal("108000.00")
+    assert [ln.line_type for ln in r.lines] == ["base", "bonus"]
+
+
+def test_period_bonuses_and_reimbursements_increase_net():
     r = calculate_payslip(_input(
         bonuses=(CompensationInput("Eid bonus", Decimal("5000")),),
         reimbursements=(CompensationInput("Travel", Decimal("2500")),),
@@ -70,47 +81,36 @@ def test_deductions_reduce_net():
     assert r.net_pay == Decimal("90500.00")
 
 
-def test_combined_adjustments():
+def test_combined_components():
     r = calculate_payslip(_input(
-        bonuses=(CompensationInput("Performance", Decimal("10000")),),
-        deductions=(CompensationInput("Tax-like adjustment", Decimal("12000")),),
+        conveyance_allowance=Decimal("4000"),
+        attendance_allowance=Decimal("1000"),
+        performance_bonus=Decimal("10000"),
+        bonuses=(CompensationInput("Eid bonus", Decimal("5000")),),
+        deductions=(CompensationInput("Pension", Decimal("12000")),),
         reimbursements=(CompensationInput("Mobile bill", Decimal("3000")),),
     ))
-    assert r.net_pay == Decimal("101000.00")
+    # 100000 + (4000+1000) allowances + (10000+5000) bonuses + 3000 reimb - 12000 ded
+    assert r.allowances_total == Decimal("5000.00")
+    assert r.bonuses_total == Decimal("15000.00")
+    assert r.net_pay == Decimal("111000.00")
 
 
 def test_quantization_rounds_half_up():
-    r = calculate_payslip(_input(
-        pay_basis="hourly", base_salary=None,
-        hourly_rate=Decimal("12.345"), hours_worked=Decimal("1"),
-    ))
-    # 12.345 -> 12.35 (round half up)
+    r = calculate_payslip(_input(salary=Decimal("12.345")))
     assert r.base_pay == Decimal("12.35")
 
 
-def test_lines_include_one_per_input():
+def test_line_order():
     r = calculate_payslip(_input(
-        bonuses=(CompensationInput("A", Decimal("1")),),
-        deductions=(CompensationInput("B", Decimal("2")),),
-        reimbursements=(CompensationInput("C", Decimal("3")),),
+        conveyance_allowance=Decimal("1"),
+        performance_bonus=Decimal("2"),
+        bonuses=(CompensationInput("Period bonus", Decimal("3")),),
+        deductions=(CompensationInput("Ded", Decimal("4")),),
+        reimbursements=(CompensationInput("Reimb", Decimal("5")),),
     ))
     types = [ln.line_type for ln in r.lines]
-    assert types == ["base", "bonus", "deduction", "reimbursement"]
-
-
-def test_fixed_without_salary_raises():
-    with pytest.raises(ValueError):
-        calculate_payslip(_input(base_salary=None))
-
-
-def test_hourly_without_rate_or_hours_raises():
-    with pytest.raises(ValueError):
-        calculate_payslip(_input(pay_basis="hourly", base_salary=None, hourly_rate=None))
-    with pytest.raises(ValueError):
-        calculate_payslip(_input(
-            pay_basis="hourly", base_salary=None,
-            hourly_rate=Decimal("100"), hours_worked=None,
-        ))
+    assert types == ["base", "allowance", "bonus", "bonus", "deduction", "reimbursement"]
 
 
 def test_net_pay_money_redacts():

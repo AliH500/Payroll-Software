@@ -49,32 +49,4 @@
     }
     form input[type="checkbox"] { width: 1rem; height: 1rem; }
 </style>
-<script>
-    // Pay-basis toggle: only the rate field matching the selected basis is visible.
-    // The server-side EmployeeForm.clean() additionally clears unused rate fields,
-    // so the JS is purely a UX guard.
-    (function () {
-        const select = document.querySelector('select[name="pay_basis"]');
-        if (!select) return;
-        const targets = {
-            fixed: 'id_base_salary',
-            hourly: 'id_hourly_rate',
-            unit: 'id_unit_rate',
-        };
-        function wrapperOf(fieldId) {
-            const el = document.getElementById(fieldId);
-            return el ? el.closest('div') : null;
-        }
-        function updateVisibility() {
-            const basis = select.value;
-            for (const [key, fieldId] of Object.entries(targets)) {
-                const wrapper = wrapperOf(fieldId);
-                if (!wrapper) continue;
-                wrapper.style.display = key === basis ? '' : 'none';
-            }
-        }
-        select.addEventListener('change', updateVisibility);
-        updateVisibility();
-    })();
-</script>
 {% endblock %}

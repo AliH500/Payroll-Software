@@ -10,7 +10,7 @@ from django.test import Client
 
 from apps.accounts.context import user_context
 from apps.accounts.models import Role, User
-from apps.employees.models import Employee, PayBasis
+from apps.employees.models import Employee
 from apps.tenants.context import tenant_context
 from apps.tenants.models import Company
 
@@ -28,26 +28,26 @@ def acme_with_docs(db):  # type: ignore[no-untyped-def]
     with tenant_context(company), user_context(admin):
         Employee.objects.create(
             company=company, employee_code="EX-1", first_name="Soon", last_name="Expires",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
+            salary=Decimal("50000"),
             hire_date=date(2025, 1, 1),
             passport_expiry=today + timedelta(days=10),
         )
         Employee.objects.create(
             company=company, employee_code="EX-2", first_name="Past", last_name="Due",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
+            salary=Decimal("50000"),
             hire_date=date(2025, 1, 1),
             visa_expiry=today - timedelta(days=3),
         )
         Employee.objects.create(
             company=company, employee_code="EX-3", first_name="Far", last_name="Out",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
+            salary=Decimal("50000"),
             hire_date=date(2025, 1, 1),
             passport_expiry=today + timedelta(days=120),
         )
         # Inactive employee with an expiring passport must NOT appear.
         Employee.objects.create(
             company=company, employee_code="EX-4", first_name="In", last_name="Active",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
+            salary=Decimal("50000"),
             hire_date=date(2025, 1, 1),
             passport_expiry=today + timedelta(days=5),
             is_active=False,

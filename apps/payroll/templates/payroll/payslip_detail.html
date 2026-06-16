@@ -29,7 +29,7 @@
                 <tr class="border-b border-slate-100">
                     <td class="py-2 capitalize text-slate-600">{{ line.get_line_type_display }}</td>
                     <td class="py-2 text-slate-900">{{ line.description }}</td>
-                    <td class="py-2 text-right tabular-nums {% if line.line_type == 'deduction' %}text-red-700{% elif line.line_type == 'bonus' or line.line_type == 'reimbursement' %}text-emerald-700{% endif %}">
+                    <td class="py-2 text-right tabular-nums {% if line.line_type == 'deduction' %}text-red-700{% elif line.line_type == 'allowance' or line.line_type == 'bonus' or line.line_type == 'reimbursement' %}text-emerald-700{% endif %}">
                         {% if line.line_type == 'deduction' %}&minus;{% endif %}{{ line.amount_money.format }}
                     </td>
                 </tr>

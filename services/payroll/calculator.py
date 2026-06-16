@@ -24,14 +24,17 @@ class CompensationInput:
 
 @dataclass(frozen=True, slots=True)
 class PayrollInput:
-    """All inputs required to compute one Payslip."""
+    """All inputs required to compute one Payslip.
 
-    pay_basis: str  # one of "fixed", "hourly", "unit"
-    base_salary: Decimal | None
-    hourly_rate: Decimal | None
-    unit_rate: Decimal | None
-    hours_worked: Decimal | None
-    units_processed: Decimal | None
+    Every employee is salaried. Conveyance and attendance allowances roll into
+    allowances_total; the performance bonus rolls into bonuses_total alongside any
+    period-level bonuses.
+    """
+
+    salary: Decimal
+    conveyance_allowance: Decimal = Decimal("0")
+    attendance_allowance: Decimal = Decimal("0")
+    performance_bonus: Decimal = Decimal("0")
     bonuses: Sequence[CompensationInput] = field(default_factory=tuple)
     deductions: Sequence[CompensationInput] = field(default_factory=tuple)
     reimbursements: Sequence[CompensationInput] = field(default_factory=tuple)
@@ -40,7 +43,7 @@ class PayrollInput:
 
 @dataclass(frozen=True, slots=True)
 class PayslipLineResult:
-    line_type: str  # "base" | "bonus" | "deduction" | "reimbursement"
+    line_type: str  # "base" | "allowance" | "bonus" | "deduction" | "reimbursement"
     description: str
     amount: Decimal
 
@@ -48,6 +51,7 @@ class PayslipLineResult:
 @dataclass(frozen=True, slots=True)
 class PayslipResult:
     base_pay: Decimal
+    allowances_total: Decimal
     bonuses_total: Decimal
     deductions_total: Decimal
     reimbursements_total: Decimal
@@ -66,38 +70,30 @@ def _quantize(amount: Decimal) -> Decimal:
     return amount.quantize(_TWO_PLACES, rounding=ROUND_HALF_UP)
 
 
-def _compute_base(input_: PayrollInput) -> tuple[Decimal, str]:
-    """Return (base_pay, description) per the pay basis."""
-    if input_.pay_basis == "fixed":
-        if input_.base_salary is None:
-            raise ValueError("base_salary is required for fixed pay basis.")
-        return _quantize(input_.base_salary), "Fixed monthly salary"
-    if input_.pay_basis == "hourly":
-        if input_.hourly_rate is None or input_.hours_worked is None:
-            raise ValueError("hourly_rate and hours_worked are required for hourly pay basis.")
-        return (
-            _quantize(input_.hourly_rate * input_.hours_worked),
-            f"Hourly pay ({input_.hours_worked} h @ {input_.currency})",
-        )
-    if input_.pay_basis == "unit":
-        if input_.unit_rate is None or input_.units_processed is None:
-            raise ValueError("unit_rate and units_processed are required for unit pay basis.")
-        return (
-            _quantize(input_.unit_rate * input_.units_processed),
-            f"Unit-based pay ({input_.units_processed} units @ {input_.currency})",
-        )
-    raise ValueError(f"Unknown pay_basis: {input_.pay_basis!r}")
-
-
 def calculate_payslip(input_: PayrollInput) -> PayslipResult:
     """Pure payroll computation. No IO, no Django."""
-    base, base_description = _compute_base(input_)
-
+    base = _quantize(input_.salary)
     lines: list[PayslipLineResult] = [
-        PayslipLineResult("base", base_description, base),
+        PayslipLineResult("base", "Monthly salary", base),
     ]
 
+    # Structural allowances — kept in their own subtotal, separate from bonuses.
+    allowances_total = Decimal("0")
+    for description, amount in (
+        ("Conveyance allowance", input_.conveyance_allowance),
+        ("Attendance allowance", input_.attendance_allowance),
+    ):
+        quantized = _quantize(amount)
+        if quantized == 0:
+            continue
+        allowances_total += quantized
+        lines.append(PayslipLineResult("allowance", description, quantized))
+
     bonuses_total = Decimal("0")
+    performance = _quantize(input_.performance_bonus)
+    if performance != 0:
+        bonuses_total += performance
+        lines.append(PayslipLineResult("bonus", "Performance bonus", performance))
     for b in input_.bonuses:
         amount = _quantize(b.amount)
         bonuses_total += amount
@@ -115,10 +111,13 @@ def calculate_payslip(input_: PayrollInput) -> PayslipResult:
         reimbursements_total += amount
         lines.append(PayslipLineResult("reimbursement", r.description, amount))
 
-    net_pay = _quantize(base + bonuses_total + reimbursements_total - deductions_total)
+    net_pay = _quantize(
+        base + allowances_total + bonuses_total + reimbursements_total - deductions_total
+    )
 
     return PayslipResult(
         base_pay=base,
+        allowances_total=allowances_total,
         bonuses_total=bonuses_total,
         deductions_total=deductions_total,
         reimbursements_total=reimbursements_total,

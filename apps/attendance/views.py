@@ -29,6 +29,7 @@ _GRID_FIELDS = {
     "late": "days_late",
     "absent": "days_absent",
     "leave": "days_leave",
+    "off": "off_days",
 }
 
 

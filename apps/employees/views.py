@@ -22,7 +22,11 @@ from django.views.generic import (
 )
 
 from apps.accounts.models import Role, User
-from apps.employees.csv_import import csv_template_headers, import_employees
+from apps.employees.csv_import import (
+    REQUIRED_COLUMNS,
+    csv_template_headers,
+    import_employees,
+)
 from apps.employees.forms import EmployeeForm
 from apps.employees.models import Employee
 
@@ -129,6 +133,7 @@ def csv_import_view(request: HttpRequest) -> HttpResponse:
     return render(request, "employees/import.html", {
         "outcomes": outcomes,
         "headers": list(csv_template_headers()),
+        "required_headers": list(REQUIRED_COLUMNS),
     })
 
 

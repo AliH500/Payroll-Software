@@ -1,0 +1,4 @@
+employee_code,days_present,days_late,days_total_absent,days_absent,days_leave,off_days
+EMP-0001,21,1,1,0,1,8
+EMP-0002,18,3,4,2,2,6
+EMP-0003,20,0,2,1,1,8

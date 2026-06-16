@@ -20,7 +20,6 @@
                 <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                     <th class="px-4 py-3">ID</th>
                     <th class="px-4 py-3">Name</th>
-                    <th class="px-4 py-3">Pay basis</th>
                     <th class="px-4 py-3">Hired</th>
                     <th class="px-4 py-3">Status</th>
                     <th class="px-4 py-3 text-right">Actions</th>
@@ -34,7 +33,6 @@
                         <a href="{% url 'employees:detail' e.pk %}" class="hover:underline">{{ e.full_name }}</a>
                         {% if e.work_email %}<span class="ml-2 text-xs text-slate-500">{{ e.work_email }}</span>{% endif %}
                     </td>
-                    <td class="px-4 py-3 text-slate-600">{{ e.get_pay_basis_display }}</td>
                     <td class="px-4 py-3 text-slate-600">{{ e.hire_date|date:"Y-m-d" }}</td>
                     <td class="px-4 py-3">
                         {% if e.is_active %}

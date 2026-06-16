@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
-
 from django.db import transaction
 
 from apps.compensation.models import Bonus, Deduction, ExpenseReimbursement
@@ -21,19 +19,11 @@ def _comp_list(qs) -> tuple[CompensationInput, ...]:  # type: ignore[no-untyped-
 
 
 @transaction.atomic
-def run_payroll_for_period(
-    period: PayPeriod,
-    *,
-    hours_by_employee: dict[int, Decimal] | None = None,
-    units_by_employee: dict[int, Decimal] | None = None,
-) -> list[Payslip]:
+def run_payroll_for_period(period: PayPeriod) -> list[Payslip]:
     """Create Payslip rows for every active employee in the period's tenant.
 
     Existing payslips for the period are deleted and recreated, so re-running is safe.
     """
-    hours_by_employee = hours_by_employee or {}
-    units_by_employee = units_by_employee or {}
-
     # tenant-bypass-allowed: payroll run is invoked from views that already gate by tenant
     Payslip.all_tenants.filter(period=period).delete()  # type: ignore[misc]
 
@@ -53,30 +43,23 @@ def run_payroll_for_period(
         )
 
         input_ = PayrollInput(
-            pay_basis=emp.pay_basis,
-            base_salary=emp.base_salary,
-            hourly_rate=emp.hourly_rate,
-            unit_rate=emp.unit_rate,
-            hours_worked=hours_by_employee.get(emp.pk),
-            units_processed=units_by_employee.get(emp.pk),
+            salary=emp.salary,
+            conveyance_allowance=emp.conveyance_allowance,
+            attendance_allowance=emp.attendance_allowance,
+            performance_bonus=emp.performance_bonus,
             bonuses=_comp_list(bonuses),
             deductions=_comp_list(deductions),
             reimbursements=_comp_list(reimbursements),
             currency=period.company.currency,
         )
-        try:
-            result = calculate_payslip(input_)
-        except ValueError:
-            # Skip employees with insufficient inputs (e.g., hourly with no hours entered).
-            continue
+        result = calculate_payslip(input_)
 
         payslip = Payslip.objects.create(
             company=period.company,
             employee=emp,
             period=period,
-            hours_worked=input_.hours_worked,
-            units_processed=input_.units_processed,
             base_pay=result.base_pay,
+            allowances_total=result.allowances_total,
             bonuses_total=result.bonuses_total,
             deductions_total=result.deductions_total,
             reimbursements_total=result.reimbursements_total,

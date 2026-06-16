@@ -10,7 +10,7 @@ from django.db import connection, transaction
 
 from apps.accounts.context import user_context
 from apps.accounts.models import Role, User
-from apps.employees.models import Employee, PayBasis
+from apps.employees.models import Employee
 from apps.tenants.context import tenant_context
 from apps.tenants.models import Company
 
@@ -76,42 +76,38 @@ class Command(BaseCommand):
 
         def _seed_employees(tenant: Company, owner: User, roster: list) -> None:
             with tenant_context(tenant), user_context(owner):
-                for index, (first, last, basis, rate) in enumerate(roster, start=1):
+                for index, (first, last, salary, conveyance, attendance) in enumerate(
+                    roster, start=1,
+                ):
                     if Employee.objects.filter(  # type: ignore[misc]
                         first_name=first, last_name=last
                     ).exists():
                         continue
-                    payload = {
-                        "company": tenant,
-                        "employee_code": f"{tenant.slug.upper()}-{index:03d}",
-                        "first_name": first,
-                        "last_name": last,
-                        "pay_basis": basis,
-                        "hire_date": date(2025, 1, 1),
-                    }
-                    if basis == PayBasis.FIXED:
-                        payload["base_salary"] = rate
-                    elif basis == PayBasis.HOURLY:
-                        payload["hourly_rate"] = rate
-                    else:
-                        payload["unit_rate"] = rate
-                    Employee.objects.create(**payload)  # type: ignore[misc]
+                    Employee.objects.create(  # type: ignore[misc]
+                        company=tenant,
+                        employee_code=f"{tenant.slug.upper()}-{index:03d}",
+                        first_name=first,
+                        last_name=last,
+                        salary=salary,
+                        conveyance_allowance=conveyance,
+                        attendance_allowance=attendance,
+                        hire_date=date(2025, 1, 1),
+                    )
 
         _seed_employees(acme, alice, [
-            ("Mira", "Iqbal", PayBasis.FIXED, Decimal("85000")),
-            ("Sami", "Khan", PayBasis.HOURLY, Decimal("450")),
-            ("Bilal", "Ahmed", PayBasis.UNIT, Decimal("12.50")),
-            ("Hira", "Sheikh", PayBasis.FIXED, Decimal("110000")),
+            ("Mira", "Iqbal", Decimal("85000"), Decimal("5000"), Decimal("3000")),
+            ("Sami", "Khan", Decimal("60000"), Decimal("4000"), Decimal("2000")),
+            ("Bilal", "Ahmed", Decimal("45000"), Decimal("3000"), Decimal("0")),
+            ("Hira", "Sheikh", Decimal("110000"), Decimal("6000"), Decimal("4000")),
         ])
         _seed_employees(beta, bob, [
-            ("Tigist", "Bekele", PayBasis.FIXED, Decimal("18000")),
-            ("Yonas", "Tesfaye", PayBasis.HOURLY, Decimal("90")),
-            ("Senait", "Hailu", PayBasis.UNIT, Decimal("3.50")),
+            ("Tigist", "Bekele", Decimal("18000"), Decimal("1500"), Decimal("800")),
+            ("Yonas", "Tesfaye", Decimal("15000"), Decimal("1000"), Decimal("500")),
+            ("Senait", "Hailu", Decimal("12000"), Decimal("800"), Decimal("0")),
         ])
 
         # Open the current month's pay period and run payroll so the dashboard
-        # has something to show. We skip employees whose hourly/unit inputs are
-        # missing, which keeps the seed idempotent without prompting.
+        # has something to show. Every employee is salaried, so all generate a payslip.
         from datetime import date as _today_fn
         from decimal import Decimal as _D
 
@@ -140,16 +136,7 @@ class Command(BaseCommand):
                     description="Provident fund", amount=_D("3500"),
                 )
 
-            # Run payroll. Hourly/unit employees without hours/units recorded are skipped.
-            hours = {}
-            units = {}
-            sami = Employee.objects.filter(first_name="Sami").first()  # type: ignore[misc]
-            bilal = Employee.objects.filter(first_name="Bilal").first()  # type: ignore[misc]
-            if sami:
-                hours[sami.pk] = _D("168")
-            if bilal:
-                units[bilal.pk] = _D("3200")
-            run_payroll_for_period(period, hours_by_employee=hours, units_by_employee=units)
+            run_payroll_for_period(period)
 
         # Link a sample employee on each tenant to a self-service portal user.
         def _link_employee_user(

@@ -5,7 +5,7 @@ import pytest
 from django.urls import reverse
 
 from apps.accounts.models import Role, User
-from apps.employees.models import Employee, PayBasis
+from apps.employees.models import Employee
 from apps.tenants.context import tenant_context
 from apps.tenants.models import Company
 
@@ -45,7 +45,7 @@ class TestEmployeeListView:
         with tenant_context(acme):
             Employee.objects.create(
                 company=acme, employee_code="EMP-1", first_name="Eve", last_name="Hassan",
-                pay_basis=PayBasis.FIXED, base_salary=Decimal("100"),
+                salary=Decimal("100"),
                 hire_date=date(2026, 1, 1),
             )
         resp = client.get(reverse("employees:list"), HTTP_HOST="acme.localhost")
@@ -71,8 +71,8 @@ class TestEmployeeCreateView:
                 "work_email": "mira@acme.local",
                 "phone": "+92-300-0000000",
                 "national_id": "35202-9999999-9",
-                "pay_basis": "fixed",
-                "base_salary": "85000",
+                "salary": "85000",
+                "conveyance_allowance": "5000",
                 "hire_date": "2026-05-01",
                 "is_active": "on",
             },
@@ -82,9 +82,10 @@ class TestEmployeeCreateView:
         e = Employee.all_tenants.get(last_name="Iqbal")
         assert e.company == acme
         assert e.national_id == "35202-9999999-9"
-        assert e.base_salary == Decimal("85000")
+        assert e.salary == Decimal("85000")
+        assert e.conveyance_allowance == Decimal("5000")
 
-    def test_create_requires_rate_for_basis(self, client, acme, alice):
+    def test_create_requires_salary(self, client, acme, alice):
         client.force_login(alice)
         resp = client.post(
             reverse("employees:create"),
@@ -92,14 +93,13 @@ class TestEmployeeCreateView:
                 "employee_code": "EMP-101",
                 "first_name": "Bad",
                 "last_name": "Form",
-                "pay_basis": "hourly",
-                # hourly_rate intentionally omitted
+                # salary intentionally omitted
                 "hire_date": "2026-05-01",
             },
             HTTP_HOST="acme.localhost",
         )
         assert resp.status_code == 200
-        assert b"Required for the selected pay basis" in resp.content
+        assert not Employee.all_tenants.filter(employee_code="EMP-101").exists()
 
 
 @pytest.mark.django_db
@@ -109,7 +109,7 @@ class TestEmployeeUpdateAndDelete:
         with tenant_context(acme):
             return Employee.objects.create(
                 company=acme, employee_code="EMP-1", first_name="Sam", last_name="K",
-                pay_basis=PayBasis.FIXED, base_salary=Decimal("50000"),
+                salary=Decimal("50000"),
                 hire_date=date(2026, 1, 1),
             )
 
@@ -121,8 +121,7 @@ class TestEmployeeUpdateAndDelete:
                 "employee_code": "EMP-1",
                 "first_name": "Samira",
                 "last_name": "K",
-                "pay_basis": "fixed",
-                "base_salary": "60000",
+                "salary": "60000",
                 "hire_date": "2026-01-01",
                 "is_active": "on",
             },
@@ -131,7 +130,7 @@ class TestEmployeeUpdateAndDelete:
         assert resp.status_code == 302
         employee.refresh_from_db()
         assert employee.first_name == "Samira"
-        assert employee.base_salary == Decimal("60000")
+        assert employee.salary == Decimal("60000")
 
     def test_delete(self, client, acme, alice, employee):
         client.force_login(alice)
@@ -150,7 +149,8 @@ class TestEmployeeUpdateAndDelete:
             period = PayPeriod.objects.create(company=acme, year=2026, month=1)
             Payslip.objects.create(
                 company=acme, employee=employee, period=period,
-                base_pay=Decimal("50000"), bonuses_total=Decimal("0"),
+                base_pay=Decimal("50000"), allowances_total=Decimal("0"),
+                bonuses_total=Decimal("0"),
                 deductions_total=Decimal("0"), reimbursements_total=Decimal("0"),
                 net_pay=Decimal("50000"), currency="PKR",
             )

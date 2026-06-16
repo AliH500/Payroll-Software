@@ -1,0 +1,4 @@
+employee_code,first_name,last_name,salary,hire_date,work_email,phone,national_id,passport_number,passport_expiry,visa_number,visa_expiry,bank_account_number,conveyance_allowance,attendance_allowance,performance_bonus,is_active
+EMP-0001,Ayesha,Khan,150000,2024-03-01,ayesha@example.com,03001234567,3520112345671,,,,,,5000,3000,0,true
+EMP-0002,Bilal,Ahmed,95000,2024-06-15,bilal@example.com,03007654321,,,,,,,4000,2000,5000,true
+EMP-0003,Sana,Malik,80000,2025-01-10,sana@example.com,03009876543,,,,,,,3000,0,0,true

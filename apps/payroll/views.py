@@ -99,29 +99,13 @@ def run_payroll_view(request: HttpRequest, pk: int) -> HttpResponse:
         return redirect("payroll:period_detail", pk=pk)
 
     if request.method == "POST":
-        form = RunPayrollForm(request.POST, period=period)
+        form = RunPayrollForm(request.POST)
         if form.is_valid():
-            from apps.employees.models import Employee
-
-            # tenant-bypass-allowed: count is filtered by period.company on the same line
-            eligible = Employee.all_tenants.filter(  # type: ignore[misc]
-                company=period.company, is_active=True,
-            ).count()
-            created = run_payroll_for_period(
-                period,
-                hours_by_employee=form.hours_by_employee(),
-                units_by_employee=form.units_by_employee(),
-            )
-            skipped = eligible - len(created)
+            created = run_payroll_for_period(period)
             messages.success(request, f"Generated {len(created)} payslip(s) for {period.label}.")
-            if skipped:
-                messages.warning(
-                    request,
-                    f"{skipped} employee(s) skipped (missing rate or attendance input).",
-                )
             return redirect("payroll:period_detail", pk=pk)
     else:
-        form = RunPayrollForm(period=period)
+        form = RunPayrollForm()
 
     return render(request, "payroll/run_payroll.html", {"period": period, "form": form})
 

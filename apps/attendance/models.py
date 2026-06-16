@@ -53,6 +53,8 @@ class AttendanceRecord(TenantAwareModel):
     days_total_absent = models.PositiveSmallIntegerField(default=0)
     days_absent = models.PositiveSmallIntegerField(default=0)
     days_leave = models.PositiveSmallIntegerField(default=0)
+    # Weekends + national holidays. Record-only; does not affect pay yet.
+    off_days = models.PositiveSmallIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

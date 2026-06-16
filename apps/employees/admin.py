@@ -7,9 +7,9 @@ from apps.employees.models import Employee
 class EmployeeAdmin(admin.ModelAdmin[Employee]):
     list_display = (
         "employee_code", "last_name", "first_name", "company",
-        "pay_basis", "is_active", "hire_date",
+        "is_active", "hire_date",
     )
-    list_filter = ("company", "pay_basis", "is_active")
+    list_filter = ("company", "is_active")
     search_fields = ("employee_code", "first_name", "last_name", "work_email")
     # Inspect a single record via Django admin even though querysets are
     # tenant-scoped at the manager layer; super-admin uses `all_tenants` here.

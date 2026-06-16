@@ -10,7 +10,7 @@ from django.test import Client
 
 from apps.accounts.models import Role, User
 from apps.attendance.models import AttendanceRecord, AttendanceSheet
-from apps.employees.models import Employee, PayBasis
+from apps.employees.models import Employee
 from apps.payroll.models import PayPeriod
 from apps.tenants.context import tenant_context
 from apps.tenants.models import Company
@@ -30,7 +30,7 @@ def setup(db):  # type: ignore[no-untyped-def]
     with tenant_context(company):
         emp = Employee.objects.create(
             company=company, employee_code="EMP-1", first_name="Ayesha", last_name="Khan",
-            pay_basis=PayBasis.FIXED, base_salary=Decimal("90000"), hire_date=date(2025, 1, 1),
+            salary=Decimal("90000"), hire_date=date(2025, 1, 1),
         )
         period = PayPeriod.objects.create(company=company, year=2026, month=5)
     return {"company": company, "admin": admin, "portal": portal, "emp": emp, "period": period}
@@ -47,6 +47,7 @@ def test_saving_sheet_records_total_days_and_grid(setup):
         f"late_{emp.pk}": "2",
         f"absent_{emp.pk}": "1",
         f"leave_{emp.pk}": "2",
+        f"off_{emp.pk}": "8",
     }, **HOST)
     assert resp.status_code == 302
     sheet = AttendanceSheet.all_tenants.get(period=period)
@@ -55,6 +56,7 @@ def test_saving_sheet_records_total_days_and_grid(setup):
     assert record.days_present == 20
     assert record.days_absent == 1
     assert record.days_leave == 2
+    assert record.off_days == 8
     # Total absent is computed from absent + leave on save.
     assert record.days_total_absent == 3
 

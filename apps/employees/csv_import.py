@@ -9,14 +9,14 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-from apps.employees.models import Employee, PayBasis
+from apps.employees.models import Employee
 from apps.tenants.models import Company
 
 REQUIRED_COLUMNS = (
     "employee_code",
     "first_name",
     "last_name",
-    "pay_basis",
+    "salary",
     "hire_date",
 )
 OPTIONAL_COLUMNS = (
@@ -28,9 +28,9 @@ OPTIONAL_COLUMNS = (
     "visa_number",
     "visa_expiry",
     "bank_account_number",
-    "base_salary",
-    "hourly_rate",
-    "unit_rate",
+    "conveyance_allowance",
+    "attendance_allowance",
+    "performance_bonus",
     "is_active",
 )
 ALL_COLUMNS = REQUIRED_COLUMNS + OPTIONAL_COLUMNS
@@ -71,9 +71,9 @@ def _parse_bool(s: str) -> bool:
 def import_employees(company: Company, csv_data: bytes | str) -> list[RowOutcome]:
     """Parse and ingest CSV.
 
-    Required headers: first_name, last_name, pay_basis, hire_date.
-    pay_basis must be one of: fixed | hourly | unit. The matching rate column
-    (base_salary / hourly_rate / unit_rate) must be present for that row.
+    Required headers: employee_code, first_name, last_name, salary, hire_date.
+    Conveyance allowance, attendance allowance, and performance bonus are optional
+    and default to zero when absent or blank.
     """
     if isinstance(csv_data, bytes):
         text = csv_data.decode("utf-8-sig")
@@ -117,13 +117,16 @@ def _resolve_employee_code(company: Company, row: dict[str, str], seen_codes: se
     return code
 
 
+def _allowance(row: dict[str, str], column: str) -> Decimal:
+    """Optional allowance/bonus column; absent or blank means zero."""
+    return _parse_decimal(row.get(column, "")) or Decimal("0")
+
+
 def _row_to_employee(company: Company, row: dict[str, str], seen_codes: set[str]) -> Employee:
     code = _resolve_employee_code(company, row, seen_codes)
-    basis = (row.get("pay_basis") or "").strip().lower()
-    if basis not in PayBasis.values:
-        raise ValueError(
-            f"pay_basis must be one of {sorted(PayBasis.values)}; got {basis!r}"
-        )
+    salary = _parse_decimal(row.get("salary", ""))
+    if salary is None:
+        raise ValueError("salary is required")
     payload = dict(
         company=company,
         employee_code=code,
@@ -137,7 +140,10 @@ def _row_to_employee(company: Company, row: dict[str, str], seen_codes: set[str]
         visa_number=(row.get("visa_number") or "").strip() or None,
         visa_expiry=_parse_date(row.get("visa_expiry", "")),
         bank_account_number=(row.get("bank_account_number") or "").strip() or None,
-        pay_basis=basis,
+        salary=salary,
+        conveyance_allowance=_allowance(row, "conveyance_allowance"),
+        attendance_allowance=_allowance(row, "attendance_allowance"),
+        performance_bonus=_allowance(row, "performance_bonus"),
         hire_date=_parse_date(row.get("hire_date", "")),
         is_active=_parse_bool(row.get("is_active", "true")),
     )
@@ -145,19 +151,6 @@ def _row_to_employee(company: Company, row: dict[str, str], seen_codes: set[str]
         raise ValueError("hire_date is required")
     if not payload["first_name"] or not payload["last_name"]:
         raise ValueError("first_name and last_name are required")
-
-    if basis == PayBasis.FIXED:
-        payload["base_salary"] = _parse_decimal(row.get("base_salary", ""))
-        if payload["base_salary"] is None:
-            raise ValueError("base_salary required for pay_basis=fixed")
-    elif basis == PayBasis.HOURLY:
-        payload["hourly_rate"] = _parse_decimal(row.get("hourly_rate", ""))
-        if payload["hourly_rate"] is None:
-            raise ValueError("hourly_rate required for pay_basis=hourly")
-    elif basis == PayBasis.UNIT:
-        payload["unit_rate"] = _parse_decimal(row.get("unit_rate", ""))
-        if payload["unit_rate"] is None:
-            raise ValueError("unit_rate required for pay_basis=unit")
 
     return Employee.objects.create(**payload)
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -9,12 +8,6 @@ from django.utils.translation import gettext_lazy as _
 from apps.tenants.models_base import TenantAwareModel
 from domain.money import Money
 from services.encryption import EncryptedDecimalField, EncryptedTextField
-
-
-class PayBasis(models.TextChoices):
-    FIXED = "fixed", _("Fixed monthly salary")
-    HOURLY = "hourly", _("Hourly")
-    UNIT = "unit", _("Unit-based")
 
 
 class Employee(TenantAwareModel):
@@ -36,11 +29,12 @@ class Employee(TenantAwareModel):
     visa_expiry = models.DateField(null=True, blank=True)
     bank_account_number = EncryptedTextField(blank=True, null=True)
 
-    # Compensation — encrypted. Exactly one of these should be populated per pay_basis.
-    pay_basis = models.CharField(max_length=16, choices=PayBasis.choices)
-    base_salary = EncryptedDecimalField(blank=True, null=True)
-    hourly_rate = EncryptedDecimalField(blank=True, null=True)
-    unit_rate = EncryptedDecimalField(blank=True, null=True)
+    # Compensation — encrypted. Every employee is salaried; allowances and the
+    # performance bonus are fixed monthly amounts that default to zero.
+    salary = EncryptedDecimalField()
+    conveyance_allowance = EncryptedDecimalField(blank=True, default=Decimal("0"))
+    attendance_allowance = EncryptedDecimalField(blank=True, default=Decimal("0"))
+    performance_bonus = EncryptedDecimalField(blank=True, default=Decimal("0"))
 
     hire_date = models.DateField()
     is_active = models.BooleanField(default=True)
@@ -75,25 +69,15 @@ class Employee(TenantAwareModel):
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
 
-    @property
-    def pay_rate(self) -> Decimal | None:
-        """The active pay rate for the current pay_basis (Decimal, not Money)."""
-        rate: Any
-        if self.pay_basis == PayBasis.FIXED:
-            rate = self.base_salary
-        elif self.pay_basis == PayBasis.HOURLY:
-            rate = self.hourly_rate
-        elif self.pay_basis == PayBasis.UNIT:
-            rate = self.unit_rate
-        else:
-            return None
-        if rate is None:
-            return None
-        return rate if isinstance(rate, Decimal) else Decimal(str(rate))
+    def salary_money(self) -> Money:
+        """Monthly salary as a Money (redacts in repr/str)."""
+        return Money(self.salary, self.company.currency)
 
-    def pay_rate_money(self) -> Money | None:
-        """The active pay rate as a Money (redacts in repr/str)."""
-        rate = self.pay_rate
-        if rate is None:
-            return None
-        return Money(rate, self.company.currency)
+    def conveyance_allowance_money(self) -> Money:
+        return Money(self.conveyance_allowance, self.company.currency)
+
+    def attendance_allowance_money(self) -> Money:
+        return Money(self.attendance_allowance, self.company.currency)
+
+    def performance_bonus_money(self) -> Money:
+        return Money(self.performance_bonus, self.company.currency)

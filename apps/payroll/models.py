@@ -81,12 +81,9 @@ class Payslip(TenantAwareModel):
         PayPeriod, on_delete=models.PROTECT, related_name="payslips",
     )
 
-    # Inputs captured at run time, encrypted.
-    hours_worked = EncryptedDecimalField(blank=True, null=True)
-    units_processed = EncryptedDecimalField(blank=True, null=True)
-
     # Computed totals, encrypted.
     base_pay = EncryptedDecimalField()
+    allowances_total = EncryptedDecimalField()
     bonuses_total = EncryptedDecimalField()
     deductions_total = EncryptedDecimalField()
     reimbursements_total = EncryptedDecimalField()
@@ -107,6 +104,9 @@ class Payslip(TenantAwareModel):
     def base_pay_money(self) -> Money:
         return Money(self.base_pay, self.currency)
 
+    def allowances_money(self) -> Money:
+        return Money(self.allowances_total, self.currency)
+
     def bonuses_money(self) -> Money:
         return Money(self.bonuses_total, self.currency)
 
@@ -125,6 +125,7 @@ class PayslipLine(models.Model):
 
     class LineType(models.TextChoices):
         BASE = "base", _("Base pay")
+        ALLOWANCE = "allowance", _("Allowance")
         BONUS = "bonus", _("Bonus")
         DEDUCTION = "deduction", _("Deduction")
         REIMBURSEMENT = "reimbursement", _("Reimbursement")
@@ -135,7 +136,8 @@ class PayslipLine(models.Model):
     amount = EncryptedDecimalField()
 
     class Meta:
-        ordering = ["line_type", "id"]
+        # Insertion order: base, allowances, bonuses, deductions, reimbursements.
+        ordering = ["id"]
 
     def amount_money(self) -> Money:
         return Money(self.amount, self.payslip.currency)

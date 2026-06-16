@@ -17,6 +17,7 @@ COUNT_COLUMNS = (
     "days_total_absent",
     "days_absent",
     "days_leave",
+    "off_days",
 )
 REQUIRED_COLUMNS = ("employee_code", *COUNT_COLUMNS)
 ALL_COLUMNS = REQUIRED_COLUMNS
